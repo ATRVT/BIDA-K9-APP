@@ -50,3 +50,14 @@ export const ALL_ODORS = Array.from(new Set(Object.values(MODULE_OBJECTIVES_MAP)
 export const MOCK_DOGS: Dog[] = [];
 export const MOCK_TRAINERS: Trainer[] = [];
 export const MOCK_SESSIONS: SessionData[] = [];
+
+// --- AVATAR HELPERS ---
+// Returning empty string triggers the UI fallbacks (Icons for dogs, Initials for trainers)
+
+export const getDogAvatar = (name: string): string => {
+  return "";
+};
+
+export const getTrainerAvatar = (name: string): string => {
+  return "";
+};

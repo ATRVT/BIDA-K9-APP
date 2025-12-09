@@ -6,7 +6,7 @@ import { RapidEntry } from './components/RapidEntry';
 import { Roster } from './components/Roster';
 import { Team } from './components/Team';
 import { SessionData, Dog, Trainer, CertificationLevel } from './types';
-import { GOOGLE_SCRIPT_URL } from './constants';
+import { GOOGLE_SCRIPT_URL, getDogAvatar, getTrainerAvatar } from './constants';
 
 // --- CONFIGURACIÓN ---
 // URL moved to constants.ts
@@ -68,13 +68,18 @@ const App: React.FC = () => {
       if (data.dogs && Array.isArray(data.dogs)) {
          loadedDogs = data.dogs.map((r: any) => {
             const d = normalize(r);
+            const name = String(d.name || d.nombre || d.dogname || 'Perro').trim();
+            // Generar avatar realista de perro si no existe URL
+            const avatarUrl = d.avatar || d.avatarurl || getDogAvatar(name);
+            
             return {
                 id: String(d.id || `d-${Math.random()}`),
-                name: String(d.name || d.nombre || d.dogname || 'Perro').trim(),
+                name: name,
                 breed: String(d.breed || d.raza || ''),
                 age: Number(d.age || d.edad || 0),
                 level: d.level || d.nivel || 'Novice',
-                handlerId: '', avatarUrl: ''
+                handlerId: '', 
+                avatarUrl: avatarUrl
             };
          }).filter(d => d.name && d.name !== 'undefined');
          setDogs(loadedDogs);
@@ -86,11 +91,14 @@ const App: React.FC = () => {
           loadedTrainers = data.trainers.map((r: any) => {
               const t = normalize(r);
               const name = String(t.name || t.nombre || t.trainername || 'Entrenador').trim();
+              // Generar avatar con género correcto si no existe URL
+              const avatarUrl = t.avatar || t.avatarurl || getTrainerAvatar(name);
+              
               return {
                   id: String(t.id || `t-${Math.random()}`),
                   name: name,
                   role: String(t.role || t.rol || ''),
-                  avatarUrl: t.avatar || t.avatarurl || `https://ui-avatars.com/api/?background=random&name=${name}`
+                  avatarUrl: avatarUrl
               };
           });
           setTrainers(loadedTrainers);
@@ -107,7 +115,9 @@ const App: React.FC = () => {
               let dogId = loadedDogs.find(d => d.name.toLowerCase() === dName.toLowerCase())?.id;
               if (!dogId && dName !== 'Unknown') {
                   const tempId = `d-auto-${idx}`;
-                  loadedDogs.push({ id: tempId, name: dName, breed: 'Detectado', age: 0, level: CertificationLevel.Novice, handlerId: '', avatarUrl: '' });
+                  // Fallback avatar para perros auto-detectados
+                  const autoAvatar = getDogAvatar(dName);
+                  loadedDogs.push({ id: tempId, name: dName, breed: 'Detectado', age: 0, level: CertificationLevel.Novice, handlerId: '', avatarUrl: autoAvatar });
                   dogId = tempId;
               }
 

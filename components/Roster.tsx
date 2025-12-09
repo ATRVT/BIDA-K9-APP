@@ -1,9 +1,10 @@
+
 import React, { useState, useMemo } from 'react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { Dog, SessionData, CertificationLevel, Trainer, SessionMode } from '../types';
-import { MODULES } from '../constants';
+import { MODULES, getDogAvatar } from '../constants';
 import { Activity, Bone, ChevronRight, ChevronLeft, Target, Layers, ChevronDown, ChevronUp, X, Plus, Dog as DogIcon, Dumbbell, TestTube2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 interface RosterProps {
@@ -36,8 +37,6 @@ const UACChart = ({ data, color }: { data: SessionData[], color: string }) => {
   if (!data || data.length === 0) return null;
 
   const chartData = data.map((s, i) => {
-    // Si estamos en modo Operational, s.uaC ya vale 1 (VP/VN) y s.uaI vale 1 (FP/FN)
-    // porque así lo procesamos en App.tsx.
     return {
       name: `S${i + 1}`,
       uac: s.uaC,
@@ -96,9 +95,9 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ group }) => {
           <div className={`p-2 rounded-lg transition-colors ${isOpen ? 'bg-bida-orange/10 text-bida-orange' : 'bg-slate-100 text-slate-400'}`}>
             {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </div>
-          <div>
-            <div className="text-sm font-bold text-bida-navy">{group.module}</div>
-            <div className="text-xs text-slate-500 font-medium">Objetivo: <span className="font-bold text-slate-700">{group.objective}</span></div>
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-bida-navy truncate">{group.module}</div>
+            <div className="text-xs text-slate-500 font-medium truncate">Obj: <span className="font-bold text-slate-700">{group.objective}</span></div>
           </div>
         </div>
 
@@ -136,7 +135,6 @@ interface DogDetailProps {
 
 const DogDetailView: React.FC<DogDetailProps> = ({ dog, sessions, onBack, viewMode }) => {
   
-  // -- CÁLCULO DE PROGRESO DE MÓDULOS (Solo tiene sentido en Training) --
   const uniqueModulesCount = useMemo(() => {
     const mods = new Set<string>();
     sessions.forEach(s => {
@@ -148,17 +146,11 @@ const DogDetailView: React.FC<DogDetailProps> = ({ dog, sessions, onBack, viewMo
   const totalModules = MODULES.length;
   const progressPercent = Math.min(100, Math.round((uniqueModulesCount / totalModules) * 100));
   
-  // BIDA Colors for Progress
   let progressBarColor = "bg-bida-sky";
   if (progressPercent <= 30) progressBarColor = "bg-bida-orange";
   else if (progressPercent === 100) progressBarColor = "bg-bida-green";
 
-  // -- HISTORIAL --
   const history = useMemo(() => {
-    // Si estamos en modo Muestras, el concepto de "Modulo" no es igual, pero
-    // usamos la misma estructura para agrupar (tal vez por Fecha o ID muestra).
-    // Para simplificar, agruparemos por "Objetivo" si existe, o por Fecha.
-    
     const sortedSessions = [...sessions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
     const groups = new Map<string, {
@@ -169,7 +161,6 @@ const DogDetailView: React.FC<DogDetailProps> = ({ dog, sessions, onBack, viewMo
     }>();
 
     sortedSessions.forEach(s => {
-      // En Muestras, si no hay module/odor, usamos sampleId
       const mod = s.module || 'Muestras';
       const obj = s.targetOdor || s.sampleId || 'General';
       
@@ -193,35 +184,35 @@ const DogDetailView: React.FC<DogDetailProps> = ({ dog, sessions, onBack, viewMo
     return { current, previous };
   }, [sessions, viewMode]);
 
-  // KPIs del Perro
-  const totalSuccess = sessions.reduce((acc, s) => acc + s.uaC, 0); // En Muestras uaC ya es 1 si VP/VN
+  const totalSuccess = sessions.reduce((acc, s) => acc + s.uaC, 0); 
   
   return (
     <div className="animate-in slide-in-from-right-10 duration-300 font-sans">
-      {/* Header Detalle */}
       <div className="flex justify-between items-center mb-6">
         <button 
           onClick={onBack}
           className="flex items-center text-slate-400 hover:text-bida-navy transition font-bold text-sm"
         >
-          <ChevronLeft className="w-5 h-5 mr-1" /> Volver a la lista
+          <ChevronLeft className="w-5 h-5 mr-1" /> Volver
         </button>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm mb-8 flex flex-col md:flex-row items-center md:items-start gap-8">
-        {/* ICONO EN DETALLE */}
-        <div className="w-32 h-32 rounded-3xl bg-slate-50 flex items-center justify-center border-4 border-white shadow-xl shadow-slate-200">
-           <DogIcon className="w-14 h-14 text-slate-300" />
+      <div className="bg-white rounded-3xl border border-slate-100 p-6 md:p-8 shadow-sm mb-8 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+        <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-slate-50 flex items-center justify-center border-4 border-white shadow-xl shadow-slate-200 shrink-0 overflow-hidden">
+           {dog.avatarUrl ? (
+             <img src={dog.avatarUrl} alt={dog.name} className="w-full h-full object-cover" />
+           ) : (
+             <DogIcon className="w-10 h-10 md:w-14 md:h-14 text-slate-300" />
+           )}
         </div>
 
         <div className="flex-1 text-center md:text-left w-full">
           <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2 justify-center md:justify-start">
-            <h1 className="text-4xl font-black text-bida-navy tracking-tight">{dog.name}</h1>
+            <h1 className="text-3xl md:text-4xl font-black text-bida-navy tracking-tight">{dog.name}</h1>
             <LevelBadge level={dog.level} />
           </div>
-          <p className="text-slate-500 mb-6 font-medium text-lg">{dog.breed}</p>
+          <p className="text-slate-500 mb-6 font-medium text-base md:text-lg">{dog.breed}</p>
 
-          {/* BARRA DE PROGRESO DE ENTRENAMIENTO (Solo mostrar en Training) */}
           {viewMode === 'Training' && (
             <div className="mb-8 w-full max-w-sm mx-auto md:mx-0">
                 <div className="flex justify-between items-end mb-2">
@@ -237,16 +228,16 @@ const DogDetailView: React.FC<DogDetailProps> = ({ dog, sessions, onBack, viewMo
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4 max-w-md mx-auto md:mx-0">
-             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-md mx-auto md:mx-0">
+             <div className="bg-slate-50 p-3 md:p-4 rounded-2xl border border-slate-100">
                 <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Sesiones</div>
-                <div className="text-2xl font-bold text-bida-navy font-numeric">{sessions.length}</div>
+                <div className="text-xl md:text-2xl font-bold text-bida-navy font-numeric">{sessions.length}</div>
              </div>
-             <div className={`p-4 rounded-2xl border ${viewMode === 'Training' ? 'bg-green-50 border-green-100' : 'bg-orange-50 border-orange-100'}`}>
+             <div className={`p-3 md:p-4 rounded-2xl border ${viewMode === 'Training' ? 'bg-green-50 border-green-100' : 'bg-orange-50 border-orange-100'}`}>
                 <div className={`text-[10px] font-bold uppercase tracking-wider ${viewMode === 'Training' ? 'text-green-600' : 'text-orange-600'}`}>
-                    {viewMode === 'Training' ? 'UAC Totales' : 'Detecciones'}
+                    {viewMode === 'Training' ? 'UAC' : 'OK'}
                 </div>
-                <div className={`text-2xl font-bold font-numeric ${viewMode === 'Training' ? 'text-green-700' : 'text-orange-700'}`}>
+                <div className={`text-xl md:text-2xl font-bold font-numeric ${viewMode === 'Training' ? 'text-green-700' : 'text-orange-700'}`}>
                   {totalSuccess}
                 </div>
              </div>
@@ -254,40 +245,37 @@ const DogDetailView: React.FC<DogDetailProps> = ({ dog, sessions, onBack, viewMo
         </div>
       </div>
 
-      {/* 1. OBJETIVO EN PROGRESO (GRÁFICA GRANDE) */}
       {history.current && (
-        <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm mb-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-3xl border border-slate-100 p-6 md:p-8 shadow-sm mb-8">
+          <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-xl font-bold text-bida-navy flex items-center">
-                <Activity className="w-6 h-6 mr-2 text-bida-orange" />
-                {viewMode === 'Training' ? 'Objetivo en Progreso' : 'Actividad Reciente'}
+              <h2 className="text-lg md:text-xl font-bold text-bida-navy flex items-center">
+                <Activity className="w-5 h-5 md:w-6 md:h-6 mr-2 text-bida-orange" />
+                {viewMode === 'Training' ? 'Objetivo Actual' : 'Actividad'}
               </h2>
-              <p className="text-slate-500 text-sm mt-1 font-medium">
+              <p className="text-slate-500 text-xs md:text-sm mt-1 font-medium flex flex-wrap items-center">
                 {history.current.module} <ChevronRight className="w-3 h-3 inline mx-1 text-slate-300" /> 
                 <span className="font-bold text-bida-navy">{history.current.objective}</span>
               </p>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-black text-bida-orange font-numeric">
-                {history.current.sessions.reduce((acc, s) => acc + s.uaC, 0)} <span className="text-sm font-bold text-slate-300 font-sans">{viewMode === 'Training' ? 'UAC' : 'OK'}</span>
+              <div className="text-2xl md:text-3xl font-black text-bida-orange font-numeric">
+                {history.current.sessions.reduce((acc, s) => acc + s.uaC, 0)} <span className="text-xs md:text-sm font-bold text-slate-300 font-sans">{viewMode === 'Training' ? 'UAC' : 'OK'}</span>
               </div>
             </div>
           </div>
 
-          <div className="h-80 w-full min-h-[300px]">
-             {/* Muestra solo las últimas 6 sesiones */}
+          <div className="h-64 md:h-80 w-full min-h-[250px]">
              <UACChart data={history.current.sessions.slice(-6)} color="#f9953c" />
           </div>
         </div>
       )}
 
-      {/* 2. HISTORIAL (ACORDEONES) */}
       {history.previous.length > 0 && (
         <div>
-          <h3 className="text-xl font-bold text-bida-navy mb-5 flex items-center">
+          <h3 className="text-lg md:text-xl font-bold text-bida-navy mb-5 flex items-center">
             <Layers className="w-5 h-5 mr-2 text-slate-400" />
-            Historial de {viewMode === 'Training' ? 'Aprendizaje' : 'Muestras'}
+            Historial
           </h3>
           <div className="space-y-4">
             {history.previous.map((group, idx) => (
@@ -319,9 +307,9 @@ const NewDogModal: React.FC<NewDogModalProps> = ({ onClose, onSave }) => {
       name: formData.name,
       breed: formData.breed,
       age: Number(formData.age),
-      level: CertificationLevel.Novice, // Valor por defecto
-      handlerId: '', // Valor por defecto
-      avatarUrl: '' 
+      level: CertificationLevel.Novice, 
+      handlerId: '', 
+      avatarUrl: getDogAvatar(formData.name)
     };
     onSave(newDog);
     onClose();
@@ -397,22 +385,18 @@ const NewDogModal: React.FC<NewDogModalProps> = ({ onClose, onSave }) => {
   );
 };
 
-// --- MAIN COMPONENT ---
-
 export const Roster: React.FC<RosterProps> = ({ dogs, sessions, trainers, onAddDog }) => {
   const [selectedDogId, setSelectedDogId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<SessionMode>('Training');
   
-  // -- CALCULOS PARA LA VISTA DE LISTA --
   const dogsWithStats = useMemo(() => {
     return dogs.map(dog => {
-      // Filtrar sesiones por perro Y por modo seleccionado
       const dogSessions = sessions.filter(s => s.dogId === dog.id && s.mode === viewMode);
       
-      let totalSuccess = 0; // UAC o (VP+VN)
-      let totalOps = 0;     // (UAC+UAI) o (VP+VN+FP+FN)
-      let secondaryMetric = 0; // Modules o Falsos Positivos
+      let totalSuccess = 0; 
+      let totalOps = 0;     
+      let secondaryMetric = 0; 
 
       const uniqueModules = new Set<string>();
 
@@ -422,7 +406,6 @@ export const Roster: React.FC<RosterProps> = ({ dogs, sessions, trainers, onAddD
             totalOps += (s.uaC + s.uaI); 
             if (s.module) uniqueModules.add(s.module);
         } else {
-            // Operational Logic
             const isSuccess = s.result === 'VP' || s.result === 'VN';
             const isFailure = s.result === 'FP' || s.result === 'FN';
             
@@ -446,7 +429,6 @@ export const Roster: React.FC<RosterProps> = ({ dogs, sessions, trainers, onAddD
     }).sort((a, b) => a.name.localeCompare(b.name));
   }, [dogs, sessions, viewMode]);
 
-  // -- VISTA DE DETALLE --
   if (selectedDogId) {
     const dog = dogs.find(d => d.id === selectedDogId);
     if (!dog) return null;
@@ -461,27 +443,25 @@ export const Roster: React.FC<RosterProps> = ({ dogs, sessions, trainers, onAddD
     );
   }
 
-  // -- VISTA DE LISTA (GRID) --
   return (
     <div className="space-y-6 animate-in fade-in duration-500 font-sans">
-       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-black text-bida-navy">Unidad Canina</h2>
-          <p className="text-slate-500 font-medium">Estado y rendimiento operativo</p>
+          <h2 className="text-2xl md:text-3xl font-black text-bida-navy">Unidad Canina</h2>
+          <p className="text-slate-500 font-medium text-sm md:text-base">Estado y rendimiento</p>
         </div>
         
-        <div className="flex gap-3">
-            {/* TOGGLE */}
-            <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex">
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex w-full sm:w-auto">
                 <button 
                     onClick={() => setViewMode('Training')}
-                    className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center transition-all ${viewMode === 'Training' ? 'bg-bida-navy text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center transition-all ${viewMode === 'Training' ? 'bg-bida-navy text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                     <Dumbbell className="w-3 h-3 mr-1" /> Entreno
                 </button>
                 <button 
                     onClick={() => setViewMode('Operational')}
-                    className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center transition-all ${viewMode === 'Operational' ? 'bg-bida-orange text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center transition-all ${viewMode === 'Operational' ? 'bg-bida-orange text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                     <TestTube2 className="w-3 h-3 mr-1" /> Muestras
                 </button>
@@ -489,7 +469,7 @@ export const Roster: React.FC<RosterProps> = ({ dogs, sessions, trainers, onAddD
 
             <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2 bg-bida-navy text-white rounded-xl text-sm font-bold hover:bg-[#003366] transition shadow-lg shadow-slate-300 flex items-center"
+            className="px-4 py-2 bg-bida-navy text-white rounded-xl text-sm font-bold hover:bg-[#003366] transition shadow-lg shadow-slate-300 flex items-center justify-center w-full sm:w-auto"
             >
                 <Plus className="w-5 h-5 mr-1" /> Nuevo Perro
             </button>
@@ -511,35 +491,38 @@ export const Roster: React.FC<RosterProps> = ({ dogs, sessions, trainers, onAddD
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
           {dogsWithStats.map(dog => (
             <div 
               key={dog.id} 
               onClick={() => setSelectedDogId(dog.id)}
-              className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+              className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
             >
-              <div className="flex p-6">
-                {/* ICONO */}
-                <div className={`w-24 h-24 rounded-2xl flex items-center justify-center border transition-colors ${viewMode === 'Training' ? 'bg-slate-50 border-slate-100 group-hover:border-bida-orange/30 group-hover:bg-orange-50' : 'bg-slate-50 border-slate-100 group-hover:border-bida-green/30 group-hover:bg-green-50'}`}>
-                  {viewMode === 'Training' ? (
-                      <DogIcon className="w-12 h-12 text-slate-300 group-hover:text-bida-orange transition-colors" />
-                  ) : (
-                      <CheckCircle2 className="w-12 h-12 text-slate-300 group-hover:text-bida-green transition-colors" />
-                  )}
+              <div className="flex p-4 md:p-6">
+                <div className={`w-16 h-16 md:w-24 md:h-24 rounded-2xl flex items-center justify-center border transition-colors shrink-0 overflow-hidden ${viewMode === 'Training' ? 'bg-orange-50/50 border-orange-100' : 'bg-green-50/50 border-green-100'}`}>
+                   {dog.avatarUrl ? (
+                     <img src={dog.avatarUrl} alt={dog.name} className="w-full h-full object-cover" />
+                   ) : (
+                      viewMode === 'Training' ? (
+                          <DogIcon className="w-8 h-8 md:w-12 md:h-12 text-slate-300 group-hover:text-bida-orange transition-colors" />
+                      ) : (
+                          <CheckCircle2 className="w-8 h-8 md:w-12 md:h-12 text-slate-300 group-hover:text-bida-green transition-colors" />
+                      )
+                   )}
                 </div>
                 
-                <div className="ml-5 flex-1 min-w-0">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-2xl font-black text-bida-navy truncate">{dog.name}</h3>
+                <div className="ml-4 md:ml-5 flex-1 min-w-0">
+                  <div className="flex justify-between items-start gap-2">
+                    <h3 className="text-xl md:text-2xl font-black text-bida-navy truncate">{dog.name}</h3>
                     <LevelBadge level={dog.level} />
                   </div>
                   <p className="text-slate-500 text-sm mt-1 truncate font-medium">{dog.breed}</p>
                   
-                  <div className="flex items-center mt-5 text-xs font-bold text-slate-500 bg-slate-50 rounded-lg p-2 w-fit font-numeric">
+                  <div className="flex items-center mt-3 md:mt-5 text-[10px] md:text-xs font-bold text-slate-500 bg-slate-50 rounded-lg p-2 w-fit font-numeric">
                     {viewMode === 'Training' ? (
                         <>
                             <Target className="w-3.5 h-3.5 mr-1.5 text-bida-sky" />
-                            {dog.stats.primaryMetric} Módulos activos
+                            {dog.stats.primaryMetric} Módulos
                         </>
                     ) : (
                         <>
@@ -551,21 +534,20 @@ export const Roster: React.FC<RosterProps> = ({ dogs, sessions, trainers, onAddD
                 </div>
               </div>
 
-              {/* Metricas Clave */}
-              <div className="bg-slate-50/50 px-6 py-5 border-t border-slate-50 grid grid-cols-3 gap-4 divide-x divide-slate-200">
+              <div className="bg-slate-50/50 px-4 py-3 md:px-6 md:py-5 border-t border-slate-50 grid grid-cols-3 gap-4 divide-x divide-slate-200">
                 <div className="text-center">
                   <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Sesiones</div>
-                  <div className="text-xl font-bold text-slate-700 font-numeric">{dog.stats.totalSessions}</div>
+                  <div className="text-lg md:text-xl font-bold text-slate-700 font-numeric">{dog.stats.totalSessions}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">
                       {viewMode === 'Training' ? 'UA Corr.' : 'Efectivos'}
                   </div>
-                  <div className="text-xl font-bold text-bida-green font-numeric">{dog.stats.totalSuccess}</div>
+                  <div className="text-lg md:text-xl font-bold text-bida-green font-numeric">{dog.stats.totalSuccess}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">% Éxito</div>
-                  <div className={`text-xl font-bold font-numeric ${dog.stats.accuracy >= 80 ? 'text-bida-sky' : 'text-bida-orange'}`}>
+                  <div className={`text-lg md:text-xl font-bold font-numeric ${dog.stats.accuracy >= 80 ? 'text-bida-sky' : 'text-bida-orange'}`}>
                     {dog.stats.accuracy.toFixed(0)}%
                   </div>
                 </div>
@@ -575,7 +557,6 @@ export const Roster: React.FC<RosterProps> = ({ dogs, sessions, trainers, onAddD
         </div>
       )}
 
-      {/* MODAL NUEVO PERRO */}
       {isAddModalOpen && (
         <NewDogModal 
           onClose={() => setIsAddModalOpen(false)}
