@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Save, Trash2, CheckCircle2, ListPlus, Calendar, User, Dog as DogIcon, ClipboardList, Info, Send, Beaker, Dumbbell, TestTube2, MapPin } from 'lucide-react';
-import { Dog, Trainer, SessionData, RecordType, ReinforcerType, ReinforcementSchedule, SessionMode, SampleResult } from '../types';
+import { Dog, Trainer, SessionData, RecordType, ReinforcementSchedule, SessionMode, SampleResult } from '../types';
 import { MODULES, MODULE_OBJECTIVES_MAP, RECORD_TYPES, REINFORCERS, SCHEDULES } from '../constants';
 
 interface RapidEntryProps {
@@ -30,7 +30,8 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
     return `${year}-${month}-${day}`;
   });
 
-  const [reinforcer, setReinforcer] = useState<ReinforcerType>('Comestible');
+  // Multi-select for reinforcers
+  const [selectedReinforcers, setSelectedReinforcers] = useState<string[]>(['Comestible']);
   const [schedule, setSchedule] = useState<ReinforcementSchedule>('Fijo');
   const [notes, setNotes] = useState("");
 
@@ -79,7 +80,24 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
     }
   }, [uaC, recordType, mode]);
 
+  const toggleReinforcer = (r: string) => {
+    setSelectedReinforcers(prev => {
+      if (prev.includes(r)) {
+        // Prevent deselecting all if desired, or allow empty. 
+        // For now, allow empty but user should probably select one.
+        return prev.filter(item => item !== r);
+      } else {
+        return [...prev, r];
+      }
+    });
+  };
+
   const validateForm = (): boolean => {
+    if (selectedReinforcers.length === 0) {
+      alert("Por favor selecciona al menos un reforzador.");
+      return false;
+    }
+
     if (mode === 'Training') {
       if (uaC === '' || uaI === '') {
         alert("Por favor completa las Unidades de Aprendizaje (UA).");
@@ -104,7 +122,7 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
       dogId: selectedDog,
       trainerId: selectedTrainer,
       mode,
-      reinforcer,
+      reinforcer: selectedReinforcers.join(', '),
       schedule,
       notes
     };
@@ -146,6 +164,7 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
   };
 
   const resetFormPartial = () => {
+    setSelectedReinforcers(['Comestible']); // Reset to default
     if (mode === 'Training') {
       setUaC(0);
     } else {
@@ -192,6 +211,25 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
   };
 
   const getDogName = (id: string) => dogs.find(d => d.id === id)?.name || 'Unknown';
+
+  const ReinforcerSelector = () => (
+    <div className="flex flex-wrap gap-2">
+      {REINFORCERS.map(r => (
+        <button
+          key={r}
+          type="button"
+          onClick={() => toggleReinforcer(r)}
+          className={`px-3 py-2.5 rounded-xl text-xs font-bold border transition-all flex-1 md:flex-none text-center ${
+            selectedReinforcers.includes(r)
+              ? 'bg-bida-navy text-white border-bida-navy shadow-md'
+              : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          {r}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full font-sans pb-20 lg:pb-0">
@@ -306,10 +344,8 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
                     <input type="number" min="0" value={uaI} readOnly={recordType !== 'OCP'} onChange={(e) => setUaI(e.target.value === '' ? '' : parseInt(e.target.value))} className={`w-full p-3 rounded-xl text-2xl font-bold text-center border-2 border-transparent font-numeric ${recordType !== 'OCP' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-bida-pink shadow-sm'}`} />
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Reforzador</label>
-                    <select value={reinforcer} onChange={(e) => setReinforcer(e.target.value as ReinforcerType)} className="w-full p-3.5 bg-white rounded-xl text-sm font-medium text-slate-700 shadow-sm">
-                      {REINFORCERS.map(r => <option key={r} value={r}>{r}</option>)}
-                    </select>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Reforzadores</label>
+                    <ReinforcerSelector />
                   </div>
                   <div className="col-span-2 md:col-span-1">
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Programa</label>
@@ -350,10 +386,8 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
                 </div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Reforzador</label>
-                    <select value={reinforcer} onChange={(e) => setReinforcer(e.target.value as ReinforcerType)} className="w-full p-3.5 bg-white rounded-xl text-sm font-medium text-slate-700 shadow-sm">
-                      {REINFORCERS.map(r => <option key={r} value={r}>{r}</option>)}
-                    </select>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Reforzadores</label>
+                    <ReinforcerSelector />
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Programa</label>
