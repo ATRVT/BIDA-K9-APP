@@ -39,7 +39,7 @@ export interface SessionData {
   mode: SessionMode;
 
   // --- Common Fields ---
-  reinforcer: ReinforcerType;
+  reinforcer: string; // Changed to string to support multiple values (e.g. "Comestible, Social")
   schedule: ReinforcementSchedule;
   notes?: string;
 
