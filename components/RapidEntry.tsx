@@ -337,11 +337,28 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                   <div>
                     <label className="block text-xs font-bold text-bida-green uppercase mb-2">UA C</label>
-                    <input type="number" min="0" value={uaC} onChange={(e) => setUaC(e.target.value === '' ? '' : parseInt(e.target.value))} className="w-full p-3 bg-white border-2 border-transparent rounded-xl focus:border-bida-green focus:outline-none text-2xl font-bold text-bida-green shadow-sm text-center font-numeric" />
+                    <input 
+                      type="number" 
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      min="0" 
+                      value={uaC} 
+                      onChange={(e) => setUaC(e.target.value === '' ? '' : parseInt(e.target.value))} 
+                      className="w-full p-3 bg-white border-2 border-transparent rounded-xl focus:border-bida-green focus:outline-none text-2xl font-bold text-bida-green shadow-sm text-center font-numeric" 
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-bida-pink uppercase mb-2">UA I</label>
-                    <input type="number" min="0" value={uaI} readOnly={recordType !== 'OCP'} onChange={(e) => setUaI(e.target.value === '' ? '' : parseInt(e.target.value))} className={`w-full p-3 rounded-xl text-2xl font-bold text-center border-2 border-transparent font-numeric ${recordType !== 'OCP' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-bida-pink shadow-sm'}`} />
+                    <input 
+                      type="number" 
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      min="0" 
+                      value={uaI} 
+                      readOnly={recordType !== 'OCP'} 
+                      onChange={(e) => setUaI(e.target.value === '' ? '' : parseInt(e.target.value))} 
+                      className={`w-full p-3 rounded-xl text-2xl font-bold text-center border-2 border-transparent font-numeric ${recordType !== 'OCP' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-bida-pink shadow-sm'}`} 
+                    />
                   </div>
                   <div className="col-span-2 md:col-span-1">
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Reforzadores</label>
