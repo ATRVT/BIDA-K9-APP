@@ -299,7 +299,7 @@ const TrainerDetailView: React.FC<TrainerDetailProps> = ({ trainer, sessions, on
                   <XAxis dataKey="displayDate" tick={{fontSize: 10, fill: '#94a3b8', fontFamily: 'Ubuntu'}} axisLine={false} tickLine={false} dy={10} />
                   <YAxis domain={[0, 100]} tick={{fontSize: 10, fill: '#94a3b8', fontFamily: 'Ubuntu'}} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontFamily: 'Ubuntu' }} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                  <Line type="monotone" dataKey="rate" name="% Éxito" stroke="#f9953c" strokeWidth={4} dot={{ r: 4, fill: '#f9953c', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, fill: '#f9953c', stroke: '#ffedd5', strokeWidth: 4 }} />
+                  <Line type="linear" dataKey="rate" name="% Éxito" stroke="#f9953c" strokeWidth={4} dot={{ r: 4, fill: '#f9953c', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, fill: '#f9953c', stroke: '#ffedd5', strokeWidth: 4 }} />
                 </LineChart>
              </ResponsiveContainer>
            </div>

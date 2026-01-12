@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer
 } from 'recharts';
 import { 
   Activity, Target, TrendingUp, Calendar, 
@@ -22,40 +22,47 @@ export const Dashboard: React.FC<DashboardProps> = ({ sessions, dogs }) => {
     const filteredSessions = sessions.filter(s => s.mode === viewMode);
     
     const totalSessions = filteredSessions.length;
-    let totalSuccesses = 0;
-    let totalFailures = 0;
+    let totalUA_Correct = 0;
+    let totalUA_Incorrect = 0;
     let falsePositivesCount = 0;
 
     filteredSessions.forEach(s => {
       if (viewMode === 'Training') {
-        totalSuccesses += s.hits;
-        totalFailures += s.misses;
+        totalUA_Correct += s.uaC;
+        totalUA_Incorrect += s.uaI;
       } else {
         const isSuccess = s.result === 'VP' || s.result === 'VN';
         const isFailure = s.result === 'FP' || s.result === 'FN';
         
-        if (isSuccess) totalSuccesses++;
-        if (isFailure) totalFailures++;
+        if (isSuccess) totalUA_Correct++;
+        if (isFailure) totalUA_Incorrect++;
         if (s.result === 'FP') falsePositivesCount++;
       }
     });
 
-    const totalOpportunities = totalSuccesses + totalFailures;
-    const globalAccuracy = totalOpportunities > 0 ? (totalSuccesses / totalOpportunities) * 100 : 0;
+    const totalOpportunities = totalUA_Correct + totalUA_Incorrect;
+    const globalAccuracy = totalOpportunities > 0 ? (totalUA_Correct / totalOpportunities) * 100 : 0;
     
     const secondaryMetric = viewMode === 'Training' 
-      ? (totalSessions > 0 ? totalSuccesses / totalSessions : 0).toFixed(1)
+      ? (totalSessions > 0 ? totalUA_Correct / totalSessions : 0).toFixed(1)
       : falsePositivesCount;
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // --- LÓGICA DE EVOLUCIÓN MEJORADA (Ventana de 7 días con actividad) ---
+    const sortedSessions = [...filteredSessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const lastSessionDate = sortedSessions.length > 0 ? new Date(sortedSessions[0].date) : new Date();
     
-    const weeklySessions = filteredSessions.filter(s => new Date(s.date) >= sevenDaysAgo);
+    const startDate = new Date(lastSessionDate);
+    startDate.setDate(startDate.getDate() - 6);
+
+    const weeklySessions = filteredSessions.filter(s => {
+        const d = new Date(s.date);
+        return d >= startDate && d <= lastSessionDate;
+    });
 
     const dailyStatsMap = new Map<string, { success: number, total: number }>();
     
     for (let i = 6; i >= 0; i--) {
-        const d = new Date();
+        const d = new Date(lastSessionDate);
         d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().split('T')[0];
         dailyStatsMap.set(dateStr, { success: 0, total: 0 });
@@ -176,7 +183,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ sessions, dogs }) => {
           color="sky"
         />
         <KPICard 
-          title={viewMode === 'Training' ? "Promedio UA" : "Falsos Pos."} 
+          title={viewMode === 'Training' ? "Aciertos Promedio" : "Falsos Pos."} 
           value={stats.secondaryMetric} 
           icon={viewMode === 'Training' ? BarChart3 : AlertTriangle} 
           color={viewMode === 'Training' ? "green" : "pink"}
@@ -192,50 +199,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ sessions, dogs }) => {
              <div>
                 <h3 className="text-lg md:text-xl font-bold text-bida-navy flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-bida-orange" />
-                    Evolución (7 días)
+                    Última Actividad
                 </h3>
              </div>
              <div className="text-right">
                 <span className="block text-2xl md:text-3xl font-bold text-bida-navy font-numeric">{stats.weeklyVolume}</span>
-                <span className="text-[10px] md:text-xs text-bida-orange font-bold uppercase tracking-wider">Sesiones</span>
+                <span className="text-[10px] md:text-xs text-bida-orange font-bold uppercase tracking-wider">Sesiones en la ventana</span>
              </div>
           </div>
           
           <div className="h-64 md:h-80 w-full">
              <ResponsiveContainer width="100%" height="100%">
-               <AreaChart data={stats.evolutionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                 <defs>
-                    <linearGradient id="colorAccuracy" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={viewMode === 'Training' ? "#f9953c" : "#30e674"} stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor={viewMode === 'Training' ? "#f9953c" : "#30e674"} stopOpacity={0}/>
-                    </linearGradient>
-                 </defs>
+               <LineChart data={stats.evolutionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                  <XAxis dataKey="displayDate" tick={{fontSize: 10, fill: '#94a3b8', fontFamily: 'Ubuntu'}} axisLine={false} tickLine={false} dy={10} />
                  <YAxis domain={[0, 100]} tick={{fontSize: 10, fill: '#94a3b8', fontFamily: 'Ubuntu'}} axisLine={false} tickLine={false} />
                  <RechartsTooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontFamily: 'Ubuntu' }}
                  />
-                 <Area 
-                    type="monotone" 
+                 <Line 
+                    type="linear" 
                     dataKey="accuracy" 
                     stroke={viewMode === 'Training' ? "#f9953c" : "#30e674"}
                     strokeWidth={4}
-                    fillOpacity={1} 
-                    fill="url(#colorAccuracy)" 
                     name="% Éxito"
                     dot={{ r: 4, fill: viewMode === 'Training' ? "#f9953c" : "#30e674", strokeWidth: 2, stroke: '#fff' }}
                  />
-               </AreaChart>
+               </LineChart>
              </ResponsiveContainer>
           </div>
         </div>
 
-        {/* 3. RIGHT COLUMN: Top Performers (Weekly) */}
+        {/* 3. RIGHT COLUMN: Dog Performance */}
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col p-4 md:p-6">
            <h3 className="font-bold text-lg md:text-xl mb-2 flex items-center gap-2 text-bida-navy">
              {viewMode === 'Training' ? <Target className="w-5 h-5 text-bida-green" /> : <CheckCircle2 className="w-5 h-5 text-bida-green" />}
-             Top Semanal
+             Desempeño canino
            </h3>
 
            <div className="space-y-3 flex-1">

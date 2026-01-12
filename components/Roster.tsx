@@ -56,7 +56,7 @@ const UACChart = ({ data, color }: { data: SessionData[], color: string }) => {
           labelStyle={{ color: '#64748b', fontSize: '12px' }}
         />
         <Line 
-          type="monotone" 
+          type="linear" 
           dataKey="uac" 
           stroke={color} 
           strokeWidth={3} 

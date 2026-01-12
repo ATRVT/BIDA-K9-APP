@@ -68,8 +68,9 @@ const App: React.FC = () => {
       if (data.dogs && Array.isArray(data.dogs)) {
          loadedDogs = data.dogs.map((r: any) => {
             const d = normalize(r);
-            const name = String(d.name || d.nombre || d.dogname || 'Perro').trim();
-            // Generar avatar realista de perro si no existe URL
+            const name = String(d.name || d.nombre || d.dogname || '').trim();
+            if (!name) return null; // Ignorar filas vacías
+            
             const avatarUrl = d.avatar || d.avatarurl || getDogAvatar(name);
             
             return {
@@ -81,7 +82,7 @@ const App: React.FC = () => {
                 handlerId: '', 
                 avatarUrl: avatarUrl
             };
-         }).filter(d => d.name && d.name !== 'undefined');
+         }).filter(d => d !== null) as Dog[];
          setDogs(loadedDogs);
       }
 
@@ -90,8 +91,9 @@ const App: React.FC = () => {
       if (data.trainers && Array.isArray(data.trainers)) {
           loadedTrainers = data.trainers.map((r: any) => {
               const t = normalize(r);
-              const name = String(t.name || t.nombre || t.trainername || 'Entrenador').trim();
-              // Generar avatar con género correcto si no existe URL
+              const name = String(t.name || t.nombre || t.trainername || '').trim();
+              if (!name) return null; // Ignorar filas vacías
+              
               const avatarUrl = t.avatar || t.avatarurl || getTrainerAvatar(name);
               
               return {
@@ -100,7 +102,7 @@ const App: React.FC = () => {
                   role: String(t.role || t.rol || ''),
                   avatarUrl: avatarUrl
               };
-          });
+          }).filter(t => t !== null) as Trainer[];
           setTrainers(loadedTrainers);
       }
 
@@ -108,14 +110,16 @@ const App: React.FC = () => {
       if (data.sessions && Array.isArray(data.sessions)) {
           const loadedSessions = data.sessions.map((r: any, idx: number) => {
               const s = normalize(r);
-              const dateVal = s.date || s.sessiondate || s['fecha sesión'] || new Date().toISOString();
+              const dName = String(s.dogname || s.perro || '').trim();
+              const dateVal = s.date || s.sessiondate || s['fecha sesión'] || '';
               
+              // CRITICAL: Ignorar filas vacías que no tengan perro ni fecha
+              if (!dName || !dateVal) return null;
+
               // Match Perro
-              const dName = String(s.dogname || s.perro || 'Unknown').trim();
               let dogId = loadedDogs.find(d => d.name.toLowerCase() === dName.toLowerCase())?.id;
-              if (!dogId && dName !== 'Unknown') {
+              if (!dogId && dName !== '') {
                   const tempId = `d-auto-${idx}`;
-                  // Fallback avatar para perros auto-detectados
                   const autoAvatar = getDogAvatar(dName);
                   loadedDogs.push({ id: tempId, name: dName, breed: 'Detectado', age: 0, level: CertificationLevel.Novice, handlerId: '', avatarUrl: autoAvatar });
                   dogId = tempId;
@@ -163,7 +167,8 @@ const App: React.FC = () => {
                   result,
                   notes: s.notes || ''
               } as SessionData;
-          });
+          }).filter(s => s !== null) as SessionData[];
+          
           setSessions(loadedSessions);
           setDogs([...loadedDogs]); 
       }
