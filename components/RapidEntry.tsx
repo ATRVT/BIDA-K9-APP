@@ -69,16 +69,8 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
     }
   }, [selectedModule, mode]);
 
-  useEffect(() => {
-    if (mode === 'Training') {
-      const correct = uaC === '' ? 0 : uaC;
-      if (recordType === '10UA') {
-        setUaI(Math.max(0, 10 - correct));
-      } else if (recordType === '20UA') {
-        setUaI(Math.max(0, 20 - correct));
-      }
-    }
-  }, [uaC, recordType, mode]);
+  // Efecto de cálculo automático eliminado para permitir sesiones de longitud variable (ej. 12 ensayos)
+  // El usuario ahora tiene control total manual sobre UA C y UA I
 
   const toggleReinforcer = (r: string) => {
     setSelectedReinforcers(prev => {
@@ -355,9 +347,8 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
                       pattern="[0-9]*"
                       min="0" 
                       value={uaI} 
-                      readOnly={recordType !== 'OCP'} 
                       onChange={(e) => setUaI(e.target.value === '' ? '' : parseInt(e.target.value))} 
-                      className={`w-full p-3 rounded-xl text-2xl font-bold text-center border-2 border-transparent font-numeric ${recordType !== 'OCP' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-bida-pink shadow-sm'}`} 
+                      className="w-full p-3 rounded-xl text-2xl font-bold text-center border-2 border-transparent font-numeric bg-white text-bida-pink shadow-sm focus:border-bida-pink focus:outline-none"
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
