@@ -361,8 +361,8 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
                       min="0"
                       value={uaI}
                       onChange={(e) => setUaI(e.target.value === '' ? '' : parseInt(e.target.value))}
-                      readOnly={recordType !== 'Libre'}
-                      className={`w-full p-3 rounded-xl text-2xl font-bold text-center border-2 border-transparent font-numeric shadow-sm focus:outline-none ${recordType !== 'Libre' ? 'bg-slate-50 text-slate-400 cursor-not-allowed' : 'bg-white text-bida-pink focus:border-bida-pink'}`}
+                      readOnly={recordType === '10UA' || recordType === '20UA'}
+                      className={`w-full p-3 rounded-xl text-2xl font-bold text-center border-2 border-transparent font-numeric shadow-sm focus:outline-none ${(recordType === '10UA' || recordType === '20UA') ? 'bg-slate-50 text-slate-400 cursor-not-allowed' : 'bg-white text-bida-pink focus:border-bida-pink'}`}
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
