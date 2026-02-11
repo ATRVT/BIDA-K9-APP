@@ -19,7 +19,7 @@ enum Tab {
 }
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<Tab>(Tab.Dashboard);
+  const [activeTab, setActiveTab] = useState<Tab>(Tab.RapidEntry);
 
   // ESTADOS (Datos)
   const [sessions, setSessions] = useState<SessionData[]>([]);
