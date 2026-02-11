@@ -20,7 +20,7 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
 
   const [selectedTrainer, setSelectedTrainer] = useState<string>('');
   const [selectedDog, setSelectedDog] = useState<string>('');
-  
+
   const [date, setDate] = useState<string>(() => {
     // Usar la fecha local para evitar problemas de zona horaria con UTC
     const d = new Date();
@@ -35,7 +35,7 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
   const [schedule, setSchedule] = useState<ReinforcementSchedule>('Fijo');
   const [notes, setNotes] = useState("");
 
-  const [recordType, setRecordType] = useState<RecordType>('10UA');
+  const [recordType, setRecordType] = useState<RecordType>('Libre');
   const [selectedModule, setSelectedModule] = useState<string>(MODULES[0]);
   const [selectedOdor, setSelectedOdor] = useState<string>(MODULE_OBJECTIVES_MAP[MODULES[0]][0]);
   const [uaC, setUaC] = useState<number | ''>(0);
@@ -50,13 +50,13 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
 
   useEffect(() => {
     if (currentUser && !selectedTrainer) {
-        setSelectedTrainer(currentUser.id);
+      setSelectedTrainer(currentUser.id);
     } else if (trainers.length > 0 && !selectedTrainer) {
-        setSelectedTrainer(trainers[0].id);
+      setSelectedTrainer(trainers[0].id);
     }
-    
+
     if (dogs.length > 0 && !selectedDog) {
-        setSelectedDog(dogs[0].id);
+      setSelectedDog(dogs[0].id);
     }
   }, [trainers, dogs, currentUser]);
 
@@ -110,7 +110,7 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
 
   const createSessionObject = (): Omit<SessionData, 'id'> => {
     const base = {
-      date: date, 
+      date: date,
       dogId: selectedDog,
       trainerId: selectedTrainer,
       mode,
@@ -159,6 +159,7 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
     setSelectedReinforcers(['Comestible']); // Reset to default
     if (mode === 'Training') {
       setUaC(0);
+      setUaI(0);
     } else {
       setSampleId("");
       setPosition("");
@@ -211,11 +212,10 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
           key={r}
           type="button"
           onClick={() => toggleReinforcer(r)}
-          className={`px-3 py-2.5 rounded-xl text-xs font-bold border transition-all flex-1 md:flex-none text-center ${
-            selectedReinforcers.includes(r)
-              ? 'bg-bida-navy text-white border-bida-navy shadow-md'
-              : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-          }`}
+          className={`px-3 py-2.5 rounded-xl text-xs font-bold border transition-all flex-1 md:flex-none text-center ${selectedReinforcers.includes(r)
+            ? 'bg-bida-navy text-white border-bida-navy shadow-md'
+            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+            }`}
         >
           {r}
         </button>
@@ -227,7 +227,7 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full font-sans pb-20 lg:pb-0">
       <div className="lg:col-span-2 space-y-6">
         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8 relative overflow-hidden">
-          
+
           {singleSaveSuccess && (
             <div className="absolute inset-0 bg-bida-green/10 z-10 flex items-center justify-center backdrop-blur-sm animate-in fade-in duration-200">
               <div className="bg-white p-6 rounded-2xl shadow-xl text-center transform scale-110 border border-bida-green/20">
@@ -244,7 +244,7 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
               <ListPlus className="w-6 h-6 md:w-7 md:h-7 mr-3 text-bida-orange" />
               Nuevo Registro
             </h2>
-            
+
             <div className="bg-slate-100 p-1 rounded-xl flex font-bold text-sm w-full md:w-auto">
               <button onClick={() => setMode('Training')} className={`flex-1 md:flex-none flex items-center justify-center px-4 py-2 rounded-lg transition-all ${mode === 'Training' ? 'bg-white text-bida-navy shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
                 <Dumbbell className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">Entrenamiento</span><span className="sm:hidden">Entreno</span>
@@ -254,13 +254,13 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
               </button>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
             <div>
               <label className="flex items-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                 <User className="w-4 h-4 mr-1.5 text-bida-orange" /> Entrenador/a
               </label>
-              <select 
+              <select
                 value={selectedTrainer}
                 onChange={(e) => setSelectedTrainer(e.target.value)}
                 className="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-bida-orange/50 focus:outline-none text-sm font-medium text-slate-700"
@@ -272,7 +272,7 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
               <label className="flex items-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                 <DogIcon className="w-4 h-4 mr-1.5 text-bida-orange" /> Perro/a
               </label>
-              <select 
+              <select
                 value={selectedDog}
                 onChange={(e) => setSelectedDog(e.target.value)}
                 className="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-bida-orange/50 focus:outline-none text-sm font-medium text-slate-700"
@@ -284,8 +284,8 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
               <label className="flex items-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                 <Calendar className="w-4 h-4 mr-1.5 text-bida-orange" /> Fecha Sesión
               </label>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 className="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-bida-orange/50 focus:outline-none text-sm font-medium text-slate-700 font-numeric"
@@ -323,31 +323,36 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
               </div>
 
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-8 animate-in zoom-in-95">
-                <h3 className="text-sm font-bold text-bida-navy mb-4 flex items-center">
-                  <ClipboardList className="w-5 h-5 mr-2 text-slate-400" /> Resultados (Training)
+                <h3 className="text-sm font-bold text-bida-navy mb-4 flex items-center justify-between">
+                  <div className="flex items-center">
+                    <ClipboardList className="w-5 h-5 mr-2 text-slate-400" /> Resultados (Training)
+                  </div>
+                  <div className="px-3 py-1 bg-white rounded-lg border border-slate-200 text-[10px] uppercase tracking-widest text-slate-400 font-bold flex items-center">
+                    Total Ensayos: <span className="text-bida-orange font-numeric text-base ml-2">{(Number(uaC) || 0) + (Number(uaI) || 0)}</span>
+                  </div>
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                   <div>
                     <label className="block text-xs font-bold text-bida-green uppercase mb-2">UA C</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      min="0" 
-                      value={uaC} 
-                      onChange={(e) => setUaC(e.target.value === '' ? '' : parseInt(e.target.value))} 
-                      className="w-full p-3 bg-white border-2 border-transparent rounded-xl focus:border-bida-green focus:outline-none text-2xl font-bold text-bida-green shadow-sm text-center font-numeric" 
+                      min="0"
+                      value={uaC}
+                      onChange={(e) => setUaC(e.target.value === '' ? '' : parseInt(e.target.value))}
+                      className="w-full p-3 bg-white border-2 border-transparent rounded-xl focus:border-bida-green focus:outline-none text-2xl font-bold text-bida-green shadow-sm text-center font-numeric"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-bida-pink uppercase mb-2">UA I</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      min="0" 
-                      value={uaI} 
-                      onChange={(e) => setUaI(e.target.value === '' ? '' : parseInt(e.target.value))} 
+                      min="0"
+                      value={uaI}
+                      onChange={(e) => setUaI(e.target.value === '' ? '' : parseInt(e.target.value))}
                       className="w-full p-3 rounded-xl text-2xl font-bold text-center border-2 border-transparent font-numeric bg-white text-bida-pink shadow-sm focus:border-bida-pink focus:outline-none"
                     />
                   </div>
@@ -367,18 +372,18 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6 animate-in slide-in-from-right-4">
-                 <div>
-                    <label className="flex items-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                       <Beaker className="w-4 h-4 mr-1.5 text-bida-orange" /> ID Muestra
-                    </label>
-                    <input type="text" placeholder="Ej. U-2023-001" value={sampleId} onChange={(e) => setSampleId(e.target.value)} className="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-bida-orange/50 focus:outline-none text-sm font-medium text-slate-700 font-numeric" />
-                 </div>
-                 <div>
-                    <label className="flex items-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                       <MapPin className="w-4 h-4 mr-1.5 text-bida-orange" /> Posición
-                    </label>
-                    <input type="text" placeholder="Ej. Rueda 1 - Pos 3" value={position} onChange={(e) => setPosition(e.target.value)} className="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-bida-orange/50 focus:outline-none text-sm font-medium text-slate-700" />
-                 </div>
+                <div>
+                  <label className="flex items-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    <Beaker className="w-4 h-4 mr-1.5 text-bida-orange" /> ID Muestra
+                  </label>
+                  <input type="text" placeholder="Ej. U-2023-001" value={sampleId} onChange={(e) => setSampleId(e.target.value)} className="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-bida-orange/50 focus:outline-none text-sm font-medium text-slate-700 font-numeric" />
+                </div>
+                <div>
+                  <label className="flex items-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    <MapPin className="w-4 h-4 mr-1.5 text-bida-orange" /> Posición
+                  </label>
+                  <input type="text" placeholder="Ej. Rueda 1 - Pos 3" value={position} onChange={(e) => setPosition(e.target.value)} className="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-bida-orange/50 focus:outline-none text-sm font-medium text-slate-700" />
+                </div>
               </div>
 
               <div className="bg-orange-50/50 p-6 rounded-2xl border border-orange-100 mb-8 animate-in zoom-in-95">
@@ -386,14 +391,14 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
                   <TestTube2 className="w-5 h-5 mr-2 text-bida-orange" /> Resultado de la Detección
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                   {['VP', 'FP', 'VN', 'FN'].map((res) => (
-                     <button key={res} onClick={() => setResult(res as SampleResult)} className={`py-4 rounded-xl border-2 font-bold text-lg transition-all ${result === res ? 'bg-bida-navy border-bida-navy text-white shadow-lg scale-105' : 'bg-white border-slate-100 text-slate-400 hover:border-bida-navy/30'}`}>
-                       {res}
-                     </button>
-                   ))}
+                  {['VP', 'FP', 'VN', 'FN'].map((res) => (
+                    <button key={res} onClick={() => setResult(res as SampleResult)} className={`py-4 rounded-xl border-2 font-bold text-lg transition-all ${result === res ? 'bg-bida-navy border-bida-navy text-white shadow-lg scale-105' : 'bg-white border-slate-100 text-slate-400 hover:border-bida-navy/30'}`}>
+                      {res}
+                    </button>
+                  ))}
                 </div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div>
+                  <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Reforzadores</label>
                     <ReinforcerSelector />
                   </div>
@@ -414,7 +419,7 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
           </div>
 
           <div className="flex flex-col md:flex-row gap-4">
-             <button onClick={handleSingleSave} className="flex-1 py-4 bg-bida-green text-bida-navy rounded-2xl font-bold text-base hover:bg-[#25d366] hover:text-white active:scale-[0.99] transition-all flex items-center justify-center shadow-lg shadow-green-200">
+            <button onClick={handleSingleSave} className="flex-1 py-4 bg-bida-green text-bida-navy rounded-2xl font-bold text-base hover:bg-[#25d366] hover:text-white active:scale-[0.99] transition-all flex items-center justify-center shadow-lg shadow-green-200">
               <Save className="mr-2" /> Guardar Sesión
             </button>
             <button onClick={addToQueue} className="flex-1 py-4 bg-bida-navy text-white rounded-2xl font-bold text-base hover:bg-[#003366] active:scale-[0.99] transition-all flex items-center justify-center shadow-lg shadow-slate-300">
@@ -438,56 +443,56 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
           ) : (
             queue.map((item, index) => (
               <div key={item.tempId} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl relative group">
-                 <div className="flex justify-between items-start mb-2">
-                   <div>
-                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide border ${item.mode === 'Operational' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200'}`}>
-                       {item.mode === 'Operational' ? 'Muestra' : 'Entreno'}
-                     </span>
-                     <div className="font-bold text-bida-navy text-sm mt-1">{getDogName(item.dogId)}</div>
-                     <div className="text-[10px] text-slate-400 font-numeric flex items-center mt-1">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        {item.date}
-                     </div>
-                   </div>
-                   <button onClick={() => removeQueueItem(item.tempId)} className="text-slate-300 hover:text-bida-pink"><Trash2 size={16} /></button>
-                 </div>
-                 {item.mode === 'Training' ? (
-                   <div className="flex gap-2 text-xs font-numeric mt-2">
-                      <span className="bg-white px-2 py-1 rounded border">Mod: {item.module}</span>
-                      <span className="text-bida-green font-bold">C: {item.uaC}</span>
-                   </div>
-                 ) : (
-                   <div className="flex gap-2 text-xs font-numeric mt-2">
-                      <span className="bg-white px-2 py-1 rounded border">ID: {item.sampleId}</span>
-                      <span className="text-bida-navy font-bold">{item.result}</span>
-                   </div>
-                 )}
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide border ${item.mode === 'Operational' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200'}`}>
+                      {item.mode === 'Operational' ? 'Muestra' : 'Entreno'}
+                    </span>
+                    <div className="font-bold text-bida-navy text-sm mt-1">{getDogName(item.dogId)}</div>
+                    <div className="text-[10px] text-slate-400 font-numeric flex items-center mt-1">
+                      <Calendar className="w-3 h-3 mr-1" />
+                      {item.date}
+                    </div>
+                  </div>
+                  <button onClick={() => removeQueueItem(item.tempId)} className="text-slate-300 hover:text-bida-pink"><Trash2 size={16} /></button>
+                </div>
+                {item.mode === 'Training' ? (
+                  <div className="flex gap-2 text-xs font-numeric mt-2">
+                    <span className="bg-white px-2 py-1 rounded border">Mod: {item.module}</span>
+                    <span className="text-bida-green font-bold">C: {item.uaC}</span>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 text-xs font-numeric mt-2">
+                    <span className="bg-white px-2 py-1 rounded border">ID: {item.sampleId}</span>
+                    <span className="text-bida-navy font-bold">{item.result}</span>
+                  </div>
+                )}
               </div>
             ))
           )}
         </div>
         <div className="hidden md:block p-6 border-t border-slate-50 bg-white">
-           <button onClick={commitQueue} disabled={queue.length === 0} className="w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center uppercase tracking-wider bg-bida-orange text-white hover:bg-orange-500 shadow-lg disabled:opacity-50">
-              <Send className="mr-2 w-4 h-4" /> Enviar a Google Sheets
-            </button>
+          <button onClick={commitQueue} disabled={queue.length === 0} className="w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center uppercase tracking-wider bg-bida-orange text-white hover:bg-orange-500 shadow-lg disabled:opacity-50">
+            <Send className="mr-2 w-4 h-4" /> Enviar a Google Sheets
+          </button>
         </div>
       </div>
 
       {/* MOBILE FLOATING ACTION BUTTON */}
       {queue.length > 0 && (
         <div className="md:hidden fixed bottom-[85px] left-4 right-4 z-40 animate-in slide-in-from-bottom-4 fade-in duration-300">
-            <button 
-              onClick={commitQueue} 
-              className="w-full py-4 rounded-2xl font-bold text-base flex items-center justify-between px-6 bg-bida-orange text-white shadow-2xl shadow-orange-900/20"
-            >
-              <div className="flex items-center">
-                <div className="bg-white/20 px-2.5 py-1 rounded-lg mr-3 backdrop-blur-sm">
-                   <span className="font-numeric">{queue.length}</span>
-                </div>
-                <span className="uppercase tracking-wide text-sm">Enviar Pendientes</span>
+          <button
+            onClick={commitQueue}
+            className="w-full py-4 rounded-2xl font-bold text-base flex items-center justify-between px-6 bg-bida-orange text-white shadow-2xl shadow-orange-900/20"
+          >
+            <div className="flex items-center">
+              <div className="bg-white/20 px-2.5 py-1 rounded-lg mr-3 backdrop-blur-sm">
+                <span className="font-numeric">{queue.length}</span>
               </div>
-              <Send className="w-5 h-5" />
-            </button>
+              <span className="uppercase tracking-wide text-sm">Enviar Pendientes</span>
+            </div>
+            <Send className="w-5 h-5" />
+          </button>
         </div>
       )}
 

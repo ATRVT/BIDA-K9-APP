@@ -24,7 +24,7 @@ export interface Trainer {
 }
 
 export type SessionMode = 'Training' | 'Operational'; // Entrenamiento vs Muestras
-export type RecordType = 'OCP' | '10UA' | '20UA';
+export type RecordType = 'OCP' | '10UA' | '20UA' | 'Libre';
 export type ReinforcerType = 'Comestible' | 'Juguete' | 'Social';
 export type ReinforcementSchedule = 'Fijo' | 'Variable';
 export type SampleResult = 'VP' | 'FP' | 'VN' | 'FN' | null; // Verdadero Positivo, Falso Positivo, etc.
@@ -34,7 +34,7 @@ export interface SessionData {
   date: string; // ISO string
   dogId: string;
   trainerId: string;
-  
+
   // --- Mode Switching ---
   mode: SessionMode;
 
@@ -44,13 +44,13 @@ export interface SessionData {
   notes?: string;
 
   // --- Training Specific Fields (Optional in Operational Mode) ---
-  location?: string; 
+  location?: string;
   recordType?: RecordType;
   module?: string;
   targetOdor?: string;
-  uaC: number; 
-  uaI: number; 
-  
+  uaC: number;
+  uaI: number;
+
   // --- Operational/Sample Specific Fields (Optional in Training Mode) ---
   sampleId?: string; // Número/ID de la muestra
   position?: string; // Posición en la rueda/line-up
