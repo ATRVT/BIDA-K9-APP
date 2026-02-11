@@ -69,8 +69,16 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
     }
   }, [selectedModule, mode]);
 
-  // Efecto de cálculo automático eliminado para permitir sesiones de longitud variable (ej. 12 ensayos)
-  // El usuario ahora tiene control total manual sobre UA C y UA I
+  // Efecto de cálculo automático para tipos fijos (10UA, 20UA)
+  useEffect(() => {
+    if (mode === 'Training') {
+      if (recordType === '10UA' && uaC !== '') {
+        setUaI(Math.max(0, 10 - Number(uaC)));
+      } else if (recordType === '20UA' && uaC !== '') {
+        setUaI(Math.max(0, 20 - Number(uaC)));
+      }
+    }
+  }, [uaC, recordType, mode]);
 
   const toggleReinforcer = (r: string) => {
     setSelectedReinforcers(prev => {
@@ -353,7 +361,8 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
                       min="0"
                       value={uaI}
                       onChange={(e) => setUaI(e.target.value === '' ? '' : parseInt(e.target.value))}
-                      className="w-full p-3 rounded-xl text-2xl font-bold text-center border-2 border-transparent font-numeric bg-white text-bida-pink shadow-sm focus:border-bida-pink focus:outline-none"
+                      readOnly={recordType !== 'Libre'}
+                      className={`w-full p-3 rounded-xl text-2xl font-bold text-center border-2 border-transparent font-numeric shadow-sm focus:outline-none ${recordType !== 'Libre' ? 'bg-slate-50 text-slate-400 cursor-not-allowed' : 'bg-white text-bida-pink focus:border-bida-pink'}`}
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
