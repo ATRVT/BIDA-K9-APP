@@ -236,11 +236,16 @@ const TrainerDetailView: React.FC<TrainerDetailProps> = ({ trainer, sessions, on
       current.ops += (s.uaC + s.uaI);
     });
     return Array.from(daysMap.entries())
-      .map(([date, data]) => ({
-        date,
-        displayDate: new Date(date).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }),
-        rate: data.ops > 0 ? Math.round((data.uac / data.ops) * 100) : 0
-      }))
+      .map(([date, data]) => {
+        const [y, m, d] = date.split('-').map(Number);
+        const localDate = new Date(y, m - 1, d);
+        
+        return {
+          date,
+          displayDate: localDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }),
+          rate: data.ops > 0 ? Math.round((data.uac / data.ops) * 100) : 0
+        };
+      })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(-10);
   }, [sessions]);

@@ -84,11 +84,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ sessions, dogs }) => {
         }
     });
 
-    const evolutionData = Array.from(dailyStatsMap.entries()).map(([date, data]) => ({
-        date,
-        displayDate: new Date(date).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }),
-        accuracy: data.total > 0 ? Math.round((data.success / data.total) * 100) : 0
-    }));
+    const evolutionData = Array.from(dailyStatsMap.entries()).map(([date, data]) => {
+        // Al parsear "YYYY-MM-DD", Date lo interpreta como UTC. 
+        // Para que coincida con lo que el usuario espera (local), 
+        // forzamos la creación como fecha local dividiendo los componentes.
+        const [y, m, d] = date.split('-').map(Number);
+        const localDate = new Date(y, m - 1, d);
+        
+        return {
+            date,
+            displayDate: localDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }),
+            accuracy: data.total > 0 ? Math.round((data.success / data.total) * 100) : 0
+        };
+    });
 
     const dogPerformance = dogs.map(dog => {
       const dogWeeklySessions = weeklySessions.filter(s => s.dogId === dog.id);

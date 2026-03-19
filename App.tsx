@@ -31,20 +31,69 @@ const App: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Helper fechas
-  const parseDate = (dateStr: string): string => {
+  const parseDate = (dateStr: any): string => {
     if (!dateStr) return new Date().toISOString();
-    if (dateStr.includes('T')) return dateStr;
-    if (dateStr.includes('/')) {
-      const parts = dateStr.split('/');
+    
+    // Si ya es un objeto Date
+    if (dateStr instanceof Date) {
+      const d = new Date(Date.UTC(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate(), 12, 0, 0));
+      return d.toISOString();
+    }
+
+    const s = String(dateStr).trim();
+    if (!s) return new Date().toISOString();
+    
+    // Si ya incluye T, asumimos que es ISO, pero vamos a forzar mediodía UTC 
+    // para que sea consistente si solo tenía fecha originalmente
+    if (s.includes('T')) {
+      const d = new Date(s);
+      const forced = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0));
+      return forced.toISOString();
+    }
+
+    let day, month, year;
+
+    // Caso DD/MM/YYYY
+    if (s.includes('/')) {
+      const parts = s.split('/');
       if (parts.length === 3) {
-        const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        const year = parseInt(parts[2], 10);
-        // FIX: Crear fecha usando UTC a mediodía para evitar que zonas horarias adelanten/atrasen el día
-        const d = new Date(Date.UTC(year, month, day, 12, 0, 0));
-        return d.toISOString();
+        day = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1;
+        year = parseInt(parts[2], 10);
+      }
+    } 
+    // Caso YYYY-MM-DD o DD-MM-YYYY
+    else if (s.includes('-')) {
+      const parts = s.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) { // YYYY-MM-DD
+          year = parseInt(parts[0], 10);
+          month = parseInt(parts[1], 10) - 1;
+          day = parseInt(parts[2], 10);
+        } else { // DD-MM-YYYY
+          day = parseInt(parts[0], 10);
+          month = parseInt(parts[1], 10) - 1;
+          year = parseInt(parts[2], 10);
+        }
       }
     }
+
+    if (year !== undefined && month !== undefined && day !== undefined && !isNaN(year) && !isNaN(month) && !isNaN(day)) {
+      // FIX CRÍTICO: Crear fecha en UTC a las 12:00:00 para que al convertirla a local
+      // en cualquier zona horaria razonable (de UTC-11 a UTC+12) siga siendo el mismo día.
+      const d = new Date(Date.UTC(year, month, day, 12, 0, 0));
+      return d.toISOString();
+    }
+
+    // Fallback: tratar de parsear lo que sea, pero re-normalizar a mediodía UTC
+    try {
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        const forced = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0));
+        return forced.toISOString();
+      }
+    } catch (e) {}
+
     return new Date().toISOString();
   };
 
@@ -178,9 +227,13 @@ const App: React.FC = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  // --- LÓGICA DE GUARDADO MANUAL (ARRAY ORDENADO) ---
   const handleSaveSessions = (newSessions: SessionData[]) => {
-    setSessions(prev => [...newSessions, ...prev]);
+    // Normalizar fechas de las nuevas sesiones antes de guardarlas en el estado local
+    const normalizedNewSessions = newSessions.map(s => ({
+      ...s,
+      date: parseDate(s.date)
+    }));
+    setSessions(prev => [...normalizedNewSessions, ...prev]);
 
     // Creamos la lista de FILAS ya ordenadas
     const rowsToSend = newSessions.map(session => {
@@ -189,9 +242,15 @@ const App: React.FC = () => {
       const modeLabel = session.mode === 'Operational' ? 'Muestras' : 'Entrenamiento';
       const isTraining = session.mode === 'Training';
 
-      // Fecha Manual
+      // Fecha Manual: Convertir de ISO o YYYY-MM-DD a DD/MM/YYYY para Google Sheets
       let dateStr = session.date;
-      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      if (dateStr.includes('T')) {
+        const dObj = new Date(dateStr);
+        const dd = String(dObj.getUTCDate()).padStart(2, '0');
+        const mm = String(dObj.getUTCMonth() + 1).padStart(2, '0');
+        const yyyy = dObj.getUTCFullYear();
+        dateStr = `${dd}/${mm}/${yyyy}`;
+      } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const [y, m, d] = dateStr.split('-');
         dateStr = `${d}/${m}/${y}`;
       }
