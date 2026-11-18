@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Copy, Check, Target, Disc, ArrowRight, ArrowLeft, CheckCircle2, Info, Shuffle } from 'lucide-react';
+import { X, Copy, Check, Target, Disc, ArrowRight, ArrowLeft, CheckCircle2, Shuffle } from 'lucide-react';
 import { BlockLength, BlockOutcome, PlannedRound, RoundResult, WheelSize, generateBlockPlan, isRoundResultCorrect, isErrorResult } from '../planner';
 import { SessionMode } from '../types';
 
@@ -97,9 +97,7 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
       [roundNumber]: isDeselecting ? null : result,
     }));
 
-    // Al registrar un resultado (VP, VN, FP o FN), avanzar automáticamente
-    // a la siguiente ronda en la rueda SIN mover el scroll de la pantalla,
-    // para que el guía mantenga siempre la vista fija en la rueda.
+    // Avanzar automáticamente al siguiente ensayo sin mover el scroll
     if (!isDeselecting) {
       const currentIdx = roundNumber - 1;
       if (currentIdx + 1 < plan.length) {
@@ -150,7 +148,6 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
       }),
       '------------------------------',
       `VP: ${stats.counts.VP} · VN: ${stats.counts.VN} · FP: ${stats.counts.FP} · FN: ${stats.counts.FN}`,
-      `Correctos: ${stats.correct} · Errores: ${stats.errors}`,
     ].filter(Boolean);
 
     navigator.clipboard.writeText(lines.join('\n'));
@@ -173,7 +170,7 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
         return;
       }
       const unmarked = plan.length - marked.length;
-      if (unmarked > 0 && !confirm(`Hay ${unmarked} ronda(s) sin resultado. Solo se añadirán las ${marked.length} rondas marcadas. ¿Continuar?`)) {
+      if (unmarked > 0 && !confirm(`Hay ${unmarked} ronda(s) sin resultado. Solo se añadirán las ${marked.length} rondas marcadas. ¿Continuar?"`)) {
         return;
       }
     }
@@ -204,7 +201,7 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
   // Geometría de la rueda: posición 1 abajo y numeración en sentido horario.
   const wheelPositions = Array.from({ length: wheelSize }, (_, i) => i + 1);
   const is12 = wheelSize === 12;
-  const radius = is12 ? 100 : 95;
+  const radius = is12 ? 96 : 92;
   const nodeR = is12 ? 15 : 18;
   const centerX = 120;
   const centerY = 120;
@@ -214,144 +211,165 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
   };
 
   const resultButtonClass = (opt: RoundResult, selected: boolean, isBlankRound: boolean) => {
-    if (!selected) return 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100 hover:text-slate-600';
+    if (!selected) return 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100';
     return isRoundResultCorrect(opt, includeBlanks, isBlankRound)
-      ? 'bg-bida-green text-bida-navy border-bida-green shadow-sm scale-105'
-      : 'bg-bida-pink text-white border-bida-pink shadow-sm scale-105';
+      ? 'bg-bida-green text-bida-navy border-bida-green shadow-sm scale-[1.03]'
+      : 'bg-bida-pink text-white border-bida-pink shadow-sm scale-[1.03]';
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-4xl max-h-[94vh] rounded-3xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-4xl max-h-[96vh] rounded-3xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
 
-        {/* HEADER */}
-        <div className="p-4 md:px-8 md:py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-bida-orange/10 rounded-2xl flex items-center justify-center text-bida-orange border border-bida-orange/20">
-              <Disc className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h2 className="text-lg md:text-2xl font-black text-bida-navy">Plan de Bloque ({totalRounds} UA)</h2>
-                <span className="px-2 py-0.5 bg-bida-orange/10 text-bida-orange text-[10px] font-black rounded uppercase tracking-wider">
-                  Rueda {wheelSize} Pos
-                </span>
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50 flex items-center justify-center transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* CONTROLS BAR */}
-        <div className="px-4 md:px-8 py-3 bg-white border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Cantidad de ensayos: 10 UA vs 20 UA */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl">
-              {([10, 20] as BlockLength[]).map(count => (
-                <button
-                  key={count}
-                  type="button"
-                  onClick={() => handleTotalRounds(count)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    totalRounds === count ? 'bg-bida-navy text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  {count} UA
-                </button>
-              ))}
-            </div>
-
-            {/* Tamaño de rueda: 8 vs 12 */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl">
-              {([8, 12] as WheelSize[]).map(size => (
-                <button
-                  key={size}
-                  type="button"
-                  onClick={() => handleWheelSize(size)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    wheelSize === size ? 'bg-bida-orange text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  Rueda {size}
-                </button>
-              ))}
-            </div>
-
-            {/* Modo: Sin vacíos vs Con vacíos */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl">
-              <button
-                type="button"
-                onClick={() => handleToggleBlanks(false)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  !includeBlanks ? 'bg-white text-bida-navy shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {totalRounds} con Olor
-              </button>
-              <button
-                type="button"
-                onClick={() => handleToggleBlanks(true)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  includeBlanks ? 'bg-bida-navy text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {blankCount} Vacíos + {odorCount} Olor
-              </button>
-            </div>
-          </div>
-
+        {/* HEADER ULTRA COMPACTO */}
+        <div className="px-3.5 py-2.5 md:px-6 md:py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
           <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-bida-orange/10 rounded-xl flex items-center justify-center text-bida-orange border border-bida-orange/20 flex-shrink-0">
+              <Disc className="w-4 h-4" />
+            </div>
+            <h2 className="text-sm md:text-xl font-black text-bida-navy truncate">
+              Plan de Bloque ({totalRounds} UA)
+            </h2>
+          </div>
+
+          <div className="flex items-center space-x-1.5">
             <button
               type="button"
               onClick={() => regenerate(includeBlanks, wheelSize, totalRounds)}
-              className="flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors"
-              title="Barajar nuevas posiciones"
+              className="flex items-center space-x-1 px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-[11px] font-bold transition-colors"
+              title="Regenerar posiciones"
             >
               <Shuffle className="w-3.5 h-3.5 text-bida-orange" />
-              <span>Regenerar</span>
+              <span className="hidden sm:inline">Regenerar</span>
             </button>
             <button
               type="button"
               onClick={handleCopySequence}
-              className="flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors"
+              className="flex items-center space-x-1 px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-[11px] font-bold transition-colors"
+              title="Copiar secuencia"
             >
               {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-bida-green" />
-                  <span className="text-bida-green">¡Copiado!</span>
-                </>
+                <Check className="w-3.5 h-3.5 text-bida-green" />
               ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Copiar</span>
-                </>
+                <Copy className="w-3.5 h-3.5 text-slate-500" />
               )}
+              <span className="hidden sm:inline">{copied ? '¡Copiado!' : 'Copiar'}</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* BARRA DE CONTROLES EN UNA SOLA FILA */}
+        <div className="px-3 py-2 md:px-6 md:py-2.5 bg-white border-b border-slate-100 flex items-center justify-between gap-1.5 overflow-x-auto">
+          {/* 10 UA vs 20 UA */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl flex-shrink-0">
+            {([10, 20] as BlockLength[]).map(count => (
+              <button
+                key={count}
+                type="button"
+                onClick={() => handleTotalRounds(count)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                  totalRounds === count ? 'bg-bida-navy text-white shadow-2xs' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {count}UA
+              </button>
+            ))}
+          </div>
+
+          {/* Rueda 8 vs Rueda 12 */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl flex-shrink-0">
+            {([8, 12] as WheelSize[]).map(size => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => handleWheelSize(size)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                  wheelSize === size ? 'bg-bida-orange text-white shadow-2xs' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                R{size}
+              </button>
+            ))}
+          </div>
+
+          {/* Sin vacíos vs Con vacíos */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => handleToggleBlanks(false)}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                !includeBlanks ? 'bg-white text-bida-navy shadow-2xs' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {totalRounds} Olor
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleBlanks(true)}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                includeBlanks ? 'bg-bida-navy text-white shadow-2xs' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {blankCount} Vacíos
             </button>
           </div>
         </div>
 
         {/* MODAL BODY */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        <div className="flex-1 overflow-y-auto p-2.5 md:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 items-start">
 
-            {/* LEFT COLUMN: RUEDA INTERACTIVA (VISTA PRINCIPAL DE ENTRENAMIENTO) */}
-            <div className="md:col-span-5 flex flex-col items-center bg-slate-50/70 p-5 rounded-3xl border border-slate-100 md:sticky md:top-0">
-              <div className="w-full flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Ensayo Actual en Rueda
-                </span>
-                <span className="font-numeric font-bold text-sm bg-white px-2.5 py-1 rounded-lg border border-slate-200 text-bida-navy">
-                  {activeRound.roundNumber} / {totalRounds}
-                </span>
+            {/* PANEL PRINCIPAL: RUEDA + POSICIÓN + BOTONES VP/VN/FP/FN (SIN SCROLL EN MÓVIL) */}
+            <div className="md:col-span-5 flex flex-col items-center bg-slate-50/70 p-3 md:p-5 rounded-2xl md:rounded-3xl border border-slate-100 md:sticky md:top-0">
+              
+              {/* Tira superior integrada: Navegación + Ronda + Posición objetivo */}
+              <div className="w-full flex items-center justify-between bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs mb-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveRoundIndex(prev => Math.max(0, prev - 1))}
+                  disabled={activeRoundIndex === 0}
+                  className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-25"
+                  title="Ronda anterior"
+                >
+                  <ArrowLeft size={16} />
+                </button>
+
+                <div className="flex items-center space-x-2 text-center">
+                  <span className="font-numeric font-black text-xs px-2 py-0.5 rounded-md bg-bida-navy text-white">
+                    {activeRound.roundNumber}/{totalRounds}
+                  </span>
+                  {activeRound.isBlank ? (
+                    <span className="text-xs font-black text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200">
+                      ⚪ EN VACÍO
+                    </span>
+                  ) : (
+                    <span className="text-xs md:text-sm font-black text-bida-navy flex items-center">
+                      <Target className="w-3.5 h-3.5 text-bida-orange mr-1" />
+                      Contenedor <span className="font-numeric text-base text-bida-orange ml-1">#{activeRound.suggestedPosition}</span>
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveRoundIndex(prev => Math.min(plan.length - 1, prev + 1))}
+                  disabled={activeRoundIndex === plan.length - 1}
+                  className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-25"
+                  title="Siguiente ronda"
+                >
+                  <ArrowRight size={16} />
+                </button>
               </div>
 
-              <div className="relative my-1 select-none">
-                <svg width="240" height="240" className="overflow-visible">
+              {/* RUEDA SVG ESCALABLE */}
+              <div className="relative select-none my-0.5">
+                <svg viewBox="0 0 240 240" className="w-[182px] h-[182px] sm:w-[205px] sm:h-[205px] md:w-[225px] md:h-[225px] overflow-visible">
                   <circle cx={centerX} cy={centerY} r={radius} fill="none" stroke="#e2e8f0" strokeWidth="3" strokeDasharray="4 4" />
 
                   {wheelPositions.map(pos => {
@@ -368,26 +386,26 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
                   })}
 
                   <circle
-                    cx={centerX} cy={centerY} r={38}
+                    cx={centerX} cy={centerY} r={36}
                     fill={activeRound.isBlank ? '#fef3c7' : '#ffffff'}
                     stroke={activeRound.isBlank ? '#f59e0b' : '#cbd5e1'}
                     strokeWidth="2"
                   />
                   <text
-                    x={centerX} y={centerY - 6}
+                    x={centerX} y={centerY - 5}
                     textAnchor="middle"
-                    className="font-black text-xs uppercase"
+                    className="font-black text-[11px] uppercase"
                     fill={activeRound.isBlank ? '#b45309' : '#024580'}
                   >
-                    {activeRound.isBlank ? 'VACÍO' : 'RONDA'}
+                    {activeRound.isBlank ? 'VACÍO' : `R${activeRound.roundNumber}`}
                   </text>
                   <text
                     x={centerX} y={centerY + 15}
                     textAnchor="middle"
-                    className="font-numeric font-black text-lg"
+                    className="font-numeric font-black text-base"
                     fill={activeRound.isBlank ? '#b45309' : '#f9953c'}
                   >
-                    R{activeRound.roundNumber}
+                    {activeRound.isBlank ? '0' : `#${activeRound.suggestedPosition}`}
                   </text>
 
                   {wheelPositions.map(pos => {
@@ -425,95 +443,62 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
                 </svg>
               </div>
 
-              <div className="w-full mt-3 p-4 rounded-2xl bg-white border border-slate-100 text-center shadow-sm">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                  Posición Indicada (Ronda {activeRound.roundNumber})
-                </span>
-                {activeRound.isBlank ? (
-                  <div className="flex items-center justify-center space-x-1.5 text-amber-700 bg-amber-50 py-1.5 px-3 rounded-xl border border-amber-200">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-                    <span className="text-sm font-black">Ronda en Vacío (Sin Muestra)</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center space-x-2 text-bida-navy">
-                    <Target className="w-5 h-5 text-bida-orange" />
-                    <span className="text-base font-black">
-                      Colocar en Contenedor <span className="font-numeric text-xl text-bida-orange">#{activeRound.suggestedPosition}</span>
-                    </span>
-                  </div>
-                )}
-
-                {/* Input de muestra directo bajo la rueda cuando estamos en modo Muestras */}
+              {/* CONTROLES DE REGISTRO DIRECTO (SIEMPRE VISIBLES BAJO LA RUEDA) */}
+              <div className="w-full mt-2 bg-white p-2.5 rounded-2xl border border-slate-100 shadow-2xs space-y-2">
                 {isSamples && !activeRound.isBlank && (
-                  <div className="mt-3">
-                    <input
-                      type="text"
-                      value={sampleIds[activeRound.roundNumber] || ''}
-                      onChange={(e) => setSampleIds(prev => ({ ...prev, [activeRound.roundNumber]: e.target.value }))}
-                      placeholder={`Nº muestra hospital (Ronda ${activeRound.roundNumber})`}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-numeric text-center focus:outline-none focus:ring-2 focus:ring-bida-orange/40 focus:bg-white"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={sampleIds[activeRound.roundNumber] || ''}
+                    onChange={(e) => setSampleIds(prev => ({ ...prev, [activeRound.roundNumber]: e.target.value }))}
+                    placeholder={`Nº muestra hospital (Ronda ${activeRound.roundNumber})`}
+                    className="w-full px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-numeric text-center focus:outline-none focus:ring-2 focus:ring-bida-orange/40 focus:bg-white"
+                  />
                 )}
 
-                {/* Botones de respuesta directa sin mover el scroll */}
-                <div className="mt-3 pt-3 border-t border-slate-100">
-                  <div className="grid grid-cols-4 gap-2">
-                    {RESULT_OPTIONS.map(opt => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setRoundResult(activeRound.roundNumber, opt.value)}
-                        className={`py-2.5 rounded-xl font-bold text-xs transition-all border ${resultButtonClass(opt.value, roundResults[activeRound.roundNumber] === opt.value, activeRound.isBlank)}`}
-                        title={
-                          opt.value === 'VN' && (!includeBlanks || !activeRound.isBlank)
-                            ? 'VN (Fallo: en ronda con olor no puede haber verdadero negativo)'
-                            : opt.label
-                        }
-                      >
-                        {opt.value}
-                      </button>
-                    ))}
-                  </div>
+                {/* 4 Botones grandes de respuesta: VP / VN / FP / FN */}
+                <div className="grid grid-cols-4 gap-1.5">
+                  {RESULT_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setRoundResult(activeRound.roundNumber, opt.value)}
+                      className={`py-2.5 rounded-xl font-black text-xs transition-all border ${resultButtonClass(opt.value, roundResults[activeRound.roundNumber] === opt.value, activeRound.isBlank)}`}
+                      title={
+                        opt.value === 'VN' && (!includeBlanks || !activeRound.isBlank)
+                          ? 'VN (Fallo: en ronda con olor no puede haber verdadero negativo)'
+                          : opt.label
+                      }
+                    >
+                      {opt.value}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Navegación manual y resumen rápido */}
-                <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setActiveRoundIndex(prev => Math.max(0, prev - 1))}
-                    disabled={activeRoundIndex === 0}
-                    className="px-2.5 py-1.5 rounded-xl text-slate-600 hover:bg-slate-100 disabled:opacity-30 flex items-center space-x-1 text-xs font-bold"
-                  >
-                    <ArrowLeft size={14} />
-                    <span>Ant.</span>
-                  </button>
-                  <div className="text-[11px] font-numeric font-bold text-slate-600">
-                    <span>Completadas: {stats.completed} / {totalRounds}</span>
+                {/* Resumen compacto en 1 línea: VP · VN · FP · FN · Completadas */}
+                <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-[11px] font-numeric">
+                  <div className="flex items-center space-x-2.5 font-bold">
+                    <span className="text-green-600">VP:{stats.counts.VP}</span>
+                    <span className={!includeBlanks ? 'text-bida-pink' : 'text-green-600'}>VN:{stats.counts.VN}</span>
+                    <span className="text-bida-pink">FP:{stats.counts.FP}</span>
+                    <span className="text-bida-pink">FN:{stats.counts.FN}</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveRoundIndex(prev => Math.min(plan.length - 1, prev + 1))}
-                    disabled={activeRoundIndex === plan.length - 1}
-                    className="px-2.5 py-1.5 rounded-xl text-slate-600 hover:bg-slate-100 disabled:opacity-30 flex items-center space-x-1 text-xs font-bold"
-                  >
-                    <span>Sig.</span>
-                    <ArrowRight size={14} />
-                  </button>
+                  <span className="font-bold text-bida-navy">
+                    {stats.completed}/{totalRounds} rondas
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* RIGHT COLUMN: LISTADO COMPLETO DE RONDAS Y RESUMEN */}
+            {/* COLUMNA DERECHA / INFERIOR: LISTADO COMPLETO DE RONDAS */}
             <div className="md:col-span-7 flex flex-col justify-between">
               <div>
-                <div className="flex flex-wrap items-center justify-between gap-1 mb-3">
+                <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Secuencia del Bloque (1 al {totalRounds})
+                    Detalle de Rondas (1 al {totalRounds})
                   </h3>
                 </div>
 
-                <div className="space-y-2 md:max-h-[430px] md:overflow-y-auto pr-1">
+                <div className="space-y-1.5 md:max-h-[430px] md:overflow-y-auto pr-1">
                   {plan.map((round, idx) => {
                     const isSelected = activeRoundIndex === idx;
                     const res = roundResults[round.roundNumber];
@@ -522,28 +507,28 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
                       <div
                         key={round.roundNumber}
                         onClick={() => setActiveRoundIndex(idx)}
-                        className={`flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl border transition-all cursor-pointer ${
+                        className={`flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl border transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-orange-50/50 border-bida-orange/40 shadow-sm ring-1 ring-bida-orange/20'
+                            ? 'bg-orange-50/50 border-bida-orange/40 shadow-2xs ring-1 ring-bida-orange/20'
                             : 'bg-white border-slate-100 hover:border-slate-200'
                         }`}
                       >
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2.5">
                           <span
-                            className={`w-7 h-7 rounded-xl flex items-center justify-center font-numeric font-bold text-xs ${
+                            className={`w-6 h-6 rounded-lg flex items-center justify-center font-numeric font-bold text-xs ${
                               isSelected ? 'bg-bida-navy text-white' : 'bg-slate-100 text-slate-600'
                             }`}
                           >
                             {round.roundNumber}
                           </span>
                           {round.isBlank ? (
-                            <span className="px-2.5 py-1 rounded-lg bg-amber-100/70 border border-amber-200 text-amber-800 text-xs font-black tracking-wide">
+                            <span className="px-2 py-0.5 rounded-lg bg-amber-100/70 border border-amber-200 text-amber-800 text-xs font-black">
                               ⚪ EN VACÍO
                             </span>
                           ) : (
-                            <div className="flex items-center space-x-1.5">
-                              <span className="text-xs font-bold text-slate-700">{isSamples ? 'Pos' : 'Contenedor'}</span>
-                              <span className="px-2.5 py-0.5 rounded-lg bg-slate-100 text-bida-orange font-numeric font-black text-sm border border-slate-200">
+                            <div className="flex items-center space-x-1">
+                              <span className="text-xs font-bold text-slate-700">{isSamples ? 'Pos' : 'Cont.'}</span>
+                              <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-bida-orange font-numeric font-black text-xs border border-slate-200">
                                 #{round.suggestedPosition}
                               </span>
                             </div>
@@ -555,25 +540,21 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => setSampleIds(prev => ({ ...prev, [round.roundNumber]: e.target.value }))}
                               placeholder="Nº muestra"
-                              className={`w-28 px-2 py-1 rounded-lg border text-xs font-numeric focus:outline-none focus:ring-2 focus:ring-bida-orange/40 ${
+                              className={`w-24 px-2 py-1 rounded-lg border text-xs font-numeric focus:outline-none focus:ring-2 focus:ring-bida-orange/40 ${
                                 res && !(sampleIds[round.roundNumber] || '').trim() ? 'border-bida-pink bg-pink-50' : 'border-slate-200 bg-white'
                               }`}
                             />
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           {RESULT_OPTIONS.map(opt => (
                             <button
                               key={opt.value}
                               type="button"
                               onClick={() => setRoundResult(round.roundNumber, opt.value)}
-                              className={`w-11 py-1.5 rounded-xl font-bold text-xs transition-all border ${resultButtonClass(opt.value, res === opt.value, round.isBlank)}`}
-                              title={
-                                opt.value === 'VN' && (!includeBlanks || !round.isBlank)
-                                  ? 'VN (Fallo: en ronda con olor no puede haber verdadero negativo)'
-                                  : opt.label
-                              }
+                              className={`w-10 py-1 rounded-xl font-bold text-xs transition-all border ${resultButtonClass(opt.value, res === opt.value, round.isBlank)}`}
+                              title={opt.label}
                             >
                               {opt.value}
                             </button>
@@ -584,58 +565,33 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
                   })}
                 </div>
               </div>
-
-              {/* MARCADOR DE RESPUESTAS (VP / VN / FP / FN) */}
-              <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                <div className="grid grid-cols-4 gap-2 mb-2.5">
-                  {(['VP', 'VN', 'FP', 'FN'] as RoundResult[]).map(r => {
-                    const isErrorBox = isErrorResult(r) || (r === 'VN' && !includeBlanks);
-                    return (
-                      <div key={r} className="bg-white rounded-xl border border-slate-100 py-1.5 text-center">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                          {r === 'VN' && !includeBlanks ? 'VN (Fallo)' : r}
-                        </span>
-                        <span className={`font-numeric font-bold text-base ${isErrorBox ? 'text-bida-pink' : 'text-green-600'}`}>
-                          {stats.counts[r]}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
-                  <span className="font-bold uppercase tracking-wider text-[10px] text-slate-400">Rondas registradas</span>
-                  <span className="font-numeric font-bold text-sm text-bida-navy">{stats.completed} / {totalRounds}</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* FOOTER */}
-        <div className="p-4 md:px-8 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
-          <div className="flex items-center space-x-3 w-full sm:w-auto">
+        {/* FOOTER COMPACTO */}
+        <div className="px-3.5 py-2.5 md:px-6 md:py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs hover:bg-slate-50 transition-colors"
+          >
+            Cerrar
+          </button>
+          {onApply && (
             <button
               type="button"
-              onClick={onClose}
-              className="flex-1 lg:flex-none px-5 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs hover:bg-slate-50 transition-colors"
+              onClick={handleApply}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-bida-green text-bida-navy font-bold text-xs hover:bg-[#25d366] transition-all shadow-md shadow-green-100 flex items-center justify-center space-x-1.5"
             >
-              Cerrar
+              <CheckCircle2 size={15} />
+              <span>
+                {isSamples
+                  ? `Añadir ${stats.completed} muestra(s) a la cola`
+                  : `Añadir Bloque a la Cola (${stats.completed}/${totalRounds})`}
+              </span>
             </button>
-            {onApply && (
-              <button
-                type="button"
-                onClick={handleApply}
-                className="flex-1 lg:flex-none px-5 py-3 rounded-xl bg-bida-green text-bida-navy font-bold text-xs hover:bg-[#25d366] transition-all shadow-md shadow-green-100 flex items-center justify-center space-x-1.5"
-              >
-                <CheckCircle2 size={16} />
-                <span>
-                  {isSamples
-                    ? `Añadir ${stats.completed} muestra(s) a la cola`
-                    : `Añadir Bloque a la Cola (${stats.completed}/${totalRounds})`}
-                </span>
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
       </div>
