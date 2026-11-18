@@ -47,9 +47,20 @@ export const SCHEDULES = [
 // Helper to get all unique odors for mock data generation
 export const ALL_ODORS = Array.from(new Set(Object.values(MODULE_OBJECTIVES_MAP).flat()));
 
-// MOCK DATA REMOVED - App relies on Google Sheets data
-export const MOCK_DOGS: Dog[] = [];
-export const MOCK_TRAINERS: Trainer[] = [];
+// Datos base sincronizados con las pestañas 'Perros' y 'Entrenadores' de Google Sheets
+// Sirven como carga inmediata y respaldo offline/local si la red bloquea script.google.com
+export const MOCK_DOGS: Dog[] = [
+  { id: '01COL25', name: 'Tuty', breed: 'Mestizo colombiano', age: 2, level: CertificationLevel.Novice, avatarUrl: '', handlerId: '' },
+  { id: '02COL25', name: 'Amelie', breed: 'Mestizo colombiano', age: 2, level: CertificationLevel.Novice, avatarUrl: '', handlerId: '' },
+  { id: '03COL25', name: 'Wally', breed: 'Mestizo colombiano', age: 2, level: CertificationLevel.Novice, avatarUrl: '', handlerId: '' },
+  { id: '04COL25', name: 'Oslo', breed: 'Clumber Spaniel', age: 2, level: CertificationLevel.Novice, avatarUrl: '', handlerId: '' },
+];
+
+export const MOCK_TRAINERS: Trainer[] = [
+  { id: '01COL25', name: 'Sara Beuth', role: 'Entrenadora', avatarUrl: '' },
+  { id: '02COL25', name: 'Jairo Aristizábal', role: 'Entrenador', avatarUrl: '' },
+];
+
 export const MOCK_SESSIONS: SessionData[] = [];
 
 // --- AVATAR HELPERS ---

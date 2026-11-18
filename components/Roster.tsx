@@ -4,6 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { Dog, SessionData, CertificationLevel, Trainer, SessionMode } from '../types';
+import { isOperationalSessionSuccess, isOperationalSessionFailure } from '../planner';
 import { MODULES, getDogAvatar } from '../constants';
 import { Activity, Bone, ChevronRight, ChevronLeft, Target, Layers, ChevronDown, ChevronUp, X, Plus, Dog as DogIcon, Dumbbell, TestTube2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
@@ -406,8 +407,8 @@ export const Roster: React.FC<RosterProps> = ({ dogs, sessions, trainers, onAddD
             totalOps += (s.uaC + s.uaI); 
             if (s.module) uniqueModules.add(s.module);
         } else {
-            const isSuccess = s.result === 'VP' || s.result === 'VN';
-            const isFailure = s.result === 'FP' || s.result === 'FN';
+            const isSuccess = isOperationalSessionSuccess(s);
+            const isFailure = isOperationalSessionFailure(s);
             
             if (isSuccess) totalSuccess++;
             if (isSuccess || isFailure) totalOps++;

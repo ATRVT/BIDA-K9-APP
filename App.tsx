@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, PlusCircle, Users, PawPrint, Menu, X, Loader2, RefreshCw, LogOut } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Users, PawPrint, Menu, X, Loader2, RefreshCw, LogOut, Smartphone } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { RapidEntry } from './components/RapidEntry';
 import { Roster } from './components/Roster';
 import { Team } from './components/Team';
 import { SessionData, Dog, Trainer, CertificationLevel } from './types';
-import { GOOGLE_SCRIPT_URL, getDogAvatar, getTrainerAvatar } from './constants';
+import { GOOGLE_SCRIPT_URL, MOCK_DOGS, MOCK_TRAINERS, getDogAvatar, getTrainerAvatar } from './constants';
+import { isOperationalSessionSuccess, isOperationalSessionFailure } from './planner';
 
 // --- CONFIGURACIÓN ---
 // URL moved to constants.ts
@@ -21,14 +22,53 @@ enum Tab {
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.RapidEntry);
 
-  // ESTADOS (Datos)
+  // ESTADOS (Datos) - Inicializados con respaldo local/base para disponibilidad inmediata
   const [sessions, setSessions] = useState<SessionData[]>([]);
-  const [dogs, setDogs] = useState<Dog[]>([]);
-  const [trainers, setTrainers] = useState<Trainer[]>([]);
+  const [dogs, setDogs] = useState<Dog[]>(() => {
+    try {
+      const saved = localStorage.getItem('bida.dogs');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return MOCK_DOGS;
+  });
+  const [trainers, setTrainers] = useState<Trainer[]>(() => {
+    try {
+      const saved = localStorage.getItem('bida.trainers');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return MOCK_TRAINERS;
+  });
   const [currentUser, setCurrentUser] = useState<Trainer | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
+  const [showInstallHelp, setShowInstallHelp] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      setDeferredInstallPrompt(null);
+    } else {
+      setShowInstallHelp(true);
+    }
+  };
 
   // Helper fechas
   const parseDate = (dateStr: any): string => {
@@ -132,7 +172,14 @@ const App: React.FC = () => {
             avatarUrl: avatarUrl
           };
         }).filter(d => d !== null) as Dog[];
-        setDogs(loadedDogs);
+        if (loadedDogs.length > 0) {
+          setDogs(loadedDogs);
+          try { localStorage.setItem('bida.dogs', JSON.stringify(loadedDogs)); } catch {}
+        } else {
+          loadedDogs = [...MOCK_DOGS];
+        }
+      } else {
+        loadedDogs = [...MOCK_DOGS];
       }
 
       // 2. Entrenadores
@@ -152,7 +199,14 @@ const App: React.FC = () => {
             avatarUrl: avatarUrl
           };
         }).filter(t => t !== null) as Trainer[];
-        setTrainers(loadedTrainers);
+        if (loadedTrainers.length > 0) {
+          setTrainers(loadedTrainers);
+          try { localStorage.setItem('bida.trainers', JSON.stringify(loadedTrainers)); } catch {}
+        } else {
+          loadedTrainers = [...MOCK_TRAINERS];
+        }
+      } else {
+        loadedTrainers = [...MOCK_TRAINERS];
       }
 
       // 3. Sesiones
@@ -191,9 +245,10 @@ const App: React.FC = () => {
           const result = s.result || s.resultado || null;
           let hits = 0, misses = 0, fps = 0;
           if (mode === 'Operational') {
-            if (result === 'VP' || result === 'VN') hits = 1;
-            if (result === 'FN') misses = 1;
-            if (result === 'FP') { misses = 1; fps = 1; }
+            const opRecord = { result, notes: s.notes || '', position: s.position || '' };
+            if (isOperationalSessionSuccess(opRecord)) hits = 1;
+            if (isOperationalSessionFailure(opRecord)) misses = 1;
+            if (result === 'FP') fps = 1;
           } else {
             hits = uaC;
             misses = uaI;
@@ -266,8 +321,8 @@ const App: React.FC = () => {
         isTraining ? (session.recordType || "Libre") : "", // F: recordType
         isTraining ? (session.module || "") : "",         // G: module
         isTraining ? (session.targetOdor || "") : "",     // H: targetOdor
-        isTraining ? (session.uaC ?? 0) : "",             // I: uaC
-        isTraining ? (session.uaI ?? 0) : "",             // J: uaI
+        session.uaC ?? 0,                                 // I: uaC
+        session.uaI ?? 0,                                 // J: uaI
 
         session.reinforcer || "Comestible",     // K: reinforcer
         session.schedule || "Fijo",             // L: schedule
@@ -347,10 +402,17 @@ const App: React.FC = () => {
         </nav>
 
         {/* Footer Sidebar */}
-        <div className="p-4 bg-bida-navy/50">
-          <div className="text-[10px] text-slate-400 mb-2 font-numeric text-center">
+        <div className="p-4 bg-bida-navy/50 space-y-2">
+          <div className="text-[10px] text-slate-400 mb-1 font-numeric text-center">
             Conectado: {sessions.length} sesiones, {dogs.length} perros
           </div>
+          <button
+            onClick={handleInstallClick}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-2xl bg-bida-orange/20 border border-bida-orange/40 text-bida-orange hover:bg-bida-orange hover:text-white transition-colors"
+          >
+            <Smartphone size={15} />
+            <span className="font-bold text-xs uppercase tracking-wider">Instalar en Móvil</span>
+          </button>
           <button
             onClick={fetchData}
             disabled={isRefreshing}
@@ -381,10 +443,66 @@ const App: React.FC = () => {
 
       <div className="md:hidden fixed top-0 left-0 right-0 bg-bida-navy text-white z-50 h-16 flex items-center justify-between px-6 shadow-md">
         <span className="text-2xl font-black text-bida-orange tracking-tight">BIDA</span>
-        <button onClick={fetchData} disabled={isRefreshing}>
-          <RefreshCw size={20} className={isRefreshing ? 'animate-spin' : ''} />
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleInstallClick}
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-bida-orange/20 border border-bida-orange/40 text-bida-orange text-xs font-bold"
+            title="Instalar aplicación en el teléfono"
+          >
+            <Smartphone size={15} />
+            <span>App</span>
+          </button>
+          <button onClick={fetchData} disabled={isRefreshing}>
+            <RefreshCw size={20} className={isRefreshing ? 'animate-spin' : ''} />
+          </button>
+        </div>
       </div>
+
+      {/* Modal de instrucciones para instalar como App nativa (PWA) */}
+      {showInstallHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-bida-orange/15 text-bida-orange flex items-center justify-center">
+                  <Smartphone size={20} />
+                </div>
+                <h3 className="text-lg font-black text-bida-navy">Tener BIDA como App en tu móvil</h3>
+              </div>
+              <button onClick={() => setShowInstallHelp(false)} className="text-slate-400 hover:text-slate-700">
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-xs text-slate-600 mb-4">
+              Puedes instalar esta aplicación directamente en la pantalla de inicio de tu teléfono. Se abrirá con su propio icono y a pantalla completa, sin necesidad de entrar al navegador ni escribir enlaces:
+            </p>
+            <div className="space-y-3 text-xs">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="font-black text-bida-navy mb-1">📱 En iPhone / iPad (Safari):</div>
+                <ol className="list-decimal list-inside space-y-1 text-slate-600">
+                  <li>Abre la app una sola vez en <b>Safari</b>.</li>
+                  <li>Toca el botón <b>Compartir</b> (el cuadrado con la flecha hacia arriba en la barra inferior).</li>
+                  <li>Elige <b>"Añadir a pantalla de inicio"</b> y pulsa <b>Añadir</b>.</li>
+                </ol>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="font-black text-bida-navy mb-1">🤖 En Android (Chrome):</div>
+                <ol className="list-decimal list-inside space-y-1 text-slate-600">
+                  <li>Abre la app una sola vez en <b>Chrome</b>.</li>
+                  <li>Toca el menú de <b>tres puntos (⋮)</b> arriba a la derecha.</li>
+                  <li>Pulsa <b>"Instalar aplicación"</b> o <b>"Añadir a pantalla de inicio"</b>.</li>
+                </ol>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowInstallHelp(false)}
+              className="mt-5 w-full py-3 rounded-xl bg-bida-navy text-white font-bold text-xs hover:bg-[#003366] transition-colors"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto md:p-8 p-4 pt-20 md:pt-8 pb-24 md:pb-8 bg-bida-base">

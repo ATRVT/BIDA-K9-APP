@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#024580"/>
+  <circle cx="256" cy="240" r="135" fill="none" stroke="#f9953c" stroke-width="18" stroke-dasharray="28 18"/>
+  <circle cx="256" cy="105" r="24" fill="#ffffff"/>
+  <circle cx="391" cy="240" r="24" fill="#ffffff"/>
+  <circle cx="256" cy="375" r="28" fill="#f9953c"/>
+  <circle cx="121" cy="240" r="24" fill="#ffffff"/>
+  <circle cx="351" cy="145" r="20" fill="#ffffff" opacity="0.85"/>
+  <circle cx="351" cy="335" r="20" fill="#ffffff" opacity="0.85"/>
+  <circle cx="161" cy="335" r="20" fill="#ffffff" opacity="0.85"/>
+  <circle cx="161" cy="145" r="20" fill="#ffffff" opacity="0.85"/>
+  <circle cx="256" cy="240" r="56" fill="#f9953c"/>
+  <text x="256" y="256" font-family="Arial, sans-serif" font-weight="900" font-size="42" fill="#ffffff" text-anchor="middle">K9</text>
+  <text x="256" y="458" font-family="Arial, sans-serif" font-weight="900" font-size="64" fill="#f9953c" text-anchor="middle" letter-spacing="4">BIDA</text>
+</svg>

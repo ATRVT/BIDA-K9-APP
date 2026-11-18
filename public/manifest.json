@@ -1,0 +1,19 @@
+{
+  "name": "BIDA - Biodetección Canina",
+  "short_name": "BIDA K9",
+  "description": "Registro y planificación de biodetección canina BIDA",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#024580",
+  "theme_color": "#024580",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

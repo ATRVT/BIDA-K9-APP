@@ -8,6 +8,7 @@ import {
   BarChart3, Dog as DogIcon, Dumbbell, TestTube2, AlertTriangle, CheckCircle2
 } from 'lucide-react';
 import { SessionData, Dog, SessionMode } from '../types';
+import { isOperationalSessionSuccess, isOperationalSessionFailure } from '../planner';
 
 interface DashboardProps {
   sessions: SessionData[];
@@ -31,8 +32,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ sessions, dogs }) => {
         totalUA_Correct += s.uaC;
         totalUA_Incorrect += s.uaI;
       } else {
-        const isSuccess = s.result === 'VP' || s.result === 'VN';
-        const isFailure = s.result === 'FP' || s.result === 'FN';
+        const isSuccess = isOperationalSessionSuccess(s);
+        const isFailure = isOperationalSessionFailure(s);
         
         if (isSuccess) totalUA_Correct++;
         if (isFailure) totalUA_Incorrect++;

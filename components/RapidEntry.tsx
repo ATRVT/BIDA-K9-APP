@@ -1,8 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Save, Trash2, CheckCircle2, ListPlus, Calendar, User, Dog as DogIcon, ClipboardList, Info, Send, Beaker, Dumbbell, TestTube2, MapPin } from 'lucide-react';
+import { Save, Trash2, CheckCircle2, ListPlus, Calendar, User, Dog as DogIcon, ClipboardList, Info, Send, Beaker, Dumbbell, TestTube2, MapPin, Disc, ArrowRight } from 'lucide-react';
 import { Dog, Trainer, SessionData, RecordType, ReinforcementSchedule, SessionMode, SampleResult } from '../types';
 import { MODULES, MODULE_OBJECTIVES_MAP, RECORD_TYPES, REINFORCERS, SCHEDULES } from '../constants';
+import { BlockPlannerModal } from './BlockPlannerModal';
+import { BlockOutcome, formatPosition, isRoundResultCorrect, isOperationalSessionSuccess } from '../planner';
 
 interface RapidEntryProps {
   dogs: Dog[];
@@ -47,18 +49,17 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
 
   const [queue, setQueue] = useState<QueuedSession[]>([]);
   const [singleSaveSuccess, setSingleSaveSuccess] = useState(false);
+  const [isPlannerOpen, setIsPlannerOpen] = useState(false);
 
   useEffect(() => {
-    if (currentUser && !selectedTrainer) {
-      setSelectedTrainer(currentUser.id);
-    } else if (trainers.length > 0 && !selectedTrainer) {
-      setSelectedTrainer(trainers[0].id);
+    if (trainers.length > 0 && (!selectedTrainer || !trainers.some(t => t.id === selectedTrainer))) {
+      setSelectedTrainer(currentUser?.id || trainers[0].id);
     }
 
-    if (dogs.length > 0 && !selectedDog) {
+    if (dogs.length > 0 && (!selectedDog || !dogs.some(d => d.id === selectedDog))) {
       setSelectedDog(dogs[0].id);
     }
-  }, [trainers, dogs, currentUser]);
+  }, [trainers, dogs, currentUser, selectedTrainer, selectedDog]);
 
   useEffect(() => {
     if (mode === 'Training') {
@@ -176,6 +177,66 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
     setNotes("");
   };
 
+  const handleBlockOutcome = (outcome: BlockOutcome) => {
+    const { VP, VN, FP, FN } = outcome.counts;
+    const blanksLabel = outcome.includeBlanks ? 'con vacíos' : 'sin vacíos';
+
+    if (mode === 'Training') {
+      const plannedUaC = outcome.correct;
+      const plannedUaI = outcome.errors;
+      const totalMarked = plannedUaC + plannedUaI;
+      // Si el bloque está completo (10 o 20 rondas) usamos 10UA / 20UA; si es parcial, 'Libre'
+      // para que el cálculo automático no sobrescriba los fallos reales.
+      setRecordType(totalMarked === 20 ? '20UA' : totalMarked === 10 ? '10UA' : 'Libre');
+      setUaC(plannedUaC);
+      setUaI(plannedUaI);
+      const parts = outcome.rounds.map(r =>
+        `R${r.roundNumber}(${r.isBlank ? 'Vacío' : `P${r.suggestedPosition}`}${r.result ? `:${r.result}` : ''})`
+      );
+      const summaryNotes =
+        `Plan ${outcome.totalRounds}UA ${outcome.blockId} rueda ${outcome.wheelSize} (${blanksLabel}) ` +
+        `[VP:${VP} VN:${VN} FP:${FP} FN:${FN}]: ${parts.join(', ')}`;
+      setNotes(prev => (prev ? `${prev}\n${summaryNotes}` : summaryNotes));
+      return;
+    }
+
+    // MUESTRAS: una fila por ronda marcada (igual que el registro individual de hoy)
+    if (selectedReinforcers.length === 0) {
+      alert("Por favor selecciona al menos un reforzador antes de añadir el bloque.");
+      return;
+    }
+    const baseTime = Date.now();
+    const items: QueuedSession[] = outcome.rounds
+      .filter(r => r.result)
+      .map((r, i) => {
+        const res = r.result as SampleResult;
+        const isCorrect = isRoundResultCorrect(res, outcome.includeBlanks, r.isBlank);
+        const hits = isCorrect ? 1 : 0;
+        const misses = isCorrect ? 0 : 1;
+        const fps = res === 'FP' ? 1 : 0;
+        const roundNote = `Bloque ${outcome.blockId} · Ronda ${r.roundNumber}/${outcome.totalRounds} · rueda ${outcome.wheelSize} (${blanksLabel})`;
+        return {
+          tempId: `${baseTime}-${i}`,
+          date,
+          dogId: selectedDog,
+          trainerId: selectedTrainer,
+          mode: 'Operational' as SessionMode,
+          reinforcer: selectedReinforcers.join(', '),
+          schedule,
+          notes: notes ? `${roundNote}. ${notes}` : roundNote,
+          sampleId: r.sampleId,
+          position: formatPosition(outcome.wheelSize, r),
+          result: res,
+          uaC: hits,
+          uaI: misses,
+          hits,
+          misses,
+          falsePositives: fps,
+        };
+      });
+    setQueue(prev => [...prev, ...items]);
+  };
+
   const addToQueue = () => {
     if (!validateForm()) return;
     const newItem: QueuedSession = {
@@ -248,10 +309,21 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
           )}
 
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-            <h2 className="text-2xl md:text-3xl font-black text-bida-navy flex items-center">
-              <ListPlus className="w-6 h-6 md:w-7 md:h-7 mr-3 text-bida-orange" />
-              Nuevo Registro
-            </h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-2xl md:text-3xl font-black text-bida-navy flex items-center">
+                <ListPlus className="w-6 h-6 md:w-7 md:h-7 mr-3 text-bida-orange" />
+                Nuevo Registro
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsPlannerOpen(true)}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-bida-orange border border-orange-200/80 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
+                title="Abrir generador de posiciones y rondas en vacío para la rueda"
+              >
+                <Disc className="w-3.5 h-3.5" />
+                <span>Plan de Bloque ({mode === 'Training' && recordType === '20UA' ? '20 UA' : '10 UA'})</span>
+              </button>
+            </div>
 
             <div className="bg-slate-100 p-1 rounded-xl flex font-bold text-sm w-full md:w-auto">
               <button onClick={() => setMode('Training')} className={`flex-1 md:flex-none flex items-center justify-center px-4 py-2 rounded-lg transition-all ${mode === 'Training' ? 'bg-white text-bida-navy shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
@@ -330,13 +402,56 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
                 </div>
               </div>
 
+              {/* Callout para Bloque de 10 UA o 20 UA */}
+              {(recordType === '10UA' || recordType === '20UA') && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gradient-to-r from-orange-50/90 to-amber-50/60 border border-orange-200/80 rounded-2xl mb-6 shadow-sm gap-3 animate-in fade-in duration-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-xl bg-bida-orange/15 flex items-center justify-center text-bida-orange flex-shrink-0">
+                      <Disc className="w-5 h-5 text-bida-orange" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-bida-navy flex items-center space-x-2">
+                        <span>Asistente de Bloque {recordType === '20UA' ? '20 UA' : '10 UA'}</span>
+                        <span className="text-[10px] font-bold text-bida-orange bg-white px-2 py-0.5 rounded border border-orange-200">
+                          {selectedModule === 'Módulo Vacíos'
+                            ? (recordType === '20UA' ? '4 Rondas en Vacío' : '2 Rondas en Vacío')
+                            : (recordType === '20UA' ? '20 Rondas Equilibradas' : '10 Rondas Equilibradas')}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+                        Genera los {recordType === '20UA' ? '20' : '10'} ensayos en rueda (8 o 12) y registra VP/VN/FP/FN en directo.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsPlannerOpen(true)}
+                    className="self-end sm:self-center px-3.5 py-2 bg-bida-orange text-white rounded-xl text-xs font-bold hover:bg-orange-500 active:scale-95 transition-all shadow-sm whitespace-nowrap flex items-center space-x-1.5"
+                  >
+                    <span>Abrir Plan Rueda ({recordType})</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-8 animate-in zoom-in-95">
                 <h3 className="text-sm font-bold text-bida-navy mb-4 flex items-center justify-between">
                   <div className="flex items-center">
                     <ClipboardList className="w-5 h-5 mr-2 text-slate-400" /> Resultados (Training)
                   </div>
-                  <div className="px-3 py-1 bg-white rounded-lg border border-slate-200 text-[10px] uppercase tracking-widest text-slate-400 font-bold flex items-center">
-                    Total Ensayos: <span className="text-bida-orange font-numeric text-base ml-2">{(Number(uaC) || 0) + (Number(uaI) || 0)}</span>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsPlannerOpen(true)}
+                      className="px-2.5 py-1 bg-white hover:bg-slate-100 rounded-lg border border-slate-200 text-[11px] text-bida-orange font-bold flex items-center space-x-1 transition-colors"
+                      title="Generar plan de 10 rondas para la rueda"
+                    >
+                      <Disc className="w-3.5 h-3.5" />
+                      <span>Plan Rueda</span>
+                    </button>
+                    <div className="px-3 py-1 bg-white rounded-lg border border-slate-200 text-[10px] uppercase tracking-widest text-slate-400 font-bold flex items-center">
+                      Total Ensayos: <span className="text-bida-orange font-numeric text-base ml-2">{(Number(uaC) || 0) + (Number(uaI) || 0)}</span>
+                    </div>
                   </div>
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -380,33 +495,33 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
             </>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6 animate-in slide-in-from-right-4">
-                <div>
-                  <label className="flex items-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                    <Beaker className="w-4 h-4 mr-1.5 text-bida-orange" /> ID Muestra
-                  </label>
-                  <input type="text" placeholder="Ej. U-2023-001" value={sampleId} onChange={(e) => setSampleId(e.target.value)} className="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-bida-orange/50 focus:outline-none text-sm font-medium text-slate-700 font-numeric" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-gradient-to-r from-orange-50/90 to-amber-50/60 border border-orange-200/80 rounded-2xl mb-6 shadow-sm gap-4">
+                <div className="flex items-center space-x-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-bida-orange/15 flex items-center justify-center text-bida-orange flex-shrink-0">
+                    <Disc className="w-6 h-6 text-bida-orange" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-black text-bida-navy">Registro de Muestras en Carrusel (10 o 20 rondas)</div>
+                    <p className="text-xs text-slate-600 font-medium mt-0.5">
+                      Tanto la posición (rueda 8 o 12) como el ID de muestra del hospital y el resultado (VP/VN/FP/FN) se asignan directamente en el carrusel.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <label className="flex items-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                    <MapPin className="w-4 h-4 mr-1.5 text-bida-orange" /> Posición
-                  </label>
-                  <input type="text" placeholder="Ej. Rueda 1 - Pos 3" value={position} onChange={(e) => setPosition(e.target.value)} className="w-full p-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-bida-orange/50 focus:outline-none text-sm font-medium text-slate-700" />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPlannerOpen(true)}
+                  className="self-end sm:self-center px-4 py-2.5 bg-bida-orange text-white rounded-xl text-xs font-bold hover:bg-orange-500 active:scale-95 transition-all shadow-sm whitespace-nowrap flex items-center space-x-1.5"
+                >
+                  <span>Abrir Plan Rueda</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
 
               <div className="bg-orange-50/50 p-6 rounded-2xl border border-orange-100 mb-8 animate-in zoom-in-95">
                 <h3 className="text-sm font-bold text-bida-navy mb-4 flex items-center">
-                  <TestTube2 className="w-5 h-5 mr-2 text-bida-orange" /> Resultado de la Detección
+                  <TestTube2 className="w-5 h-5 mr-2 text-bida-orange" /> Configuración del Bloque de Muestras
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {['VP', 'FP', 'VN', 'FN'].map((res) => (
-                    <button key={res} onClick={() => setResult(res as SampleResult)} className={`py-4 rounded-xl border-2 font-bold text-lg transition-all ${result === res ? 'bg-bida-navy border-bida-navy text-white shadow-lg scale-105' : 'bg-white border-slate-100 text-slate-400 hover:border-bida-navy/30'}`}>
-                      {res}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Reforzadores</label>
                     <ReinforcerSelector />
@@ -427,14 +542,35 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
             <textarea placeholder="Detalles relevantes..." className="w-full p-4 bg-slate-50 border-0 rounded-xl h-24 resize-none focus:ring-2 focus:ring-bida-orange/50 focus:outline-none text-sm text-slate-700" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4">
-            <button onClick={handleSingleSave} className="flex-1 py-4 bg-bida-green text-bida-navy rounded-2xl font-bold text-base hover:bg-[#25d366] hover:text-white active:scale-[0.99] transition-all flex items-center justify-center shadow-lg shadow-green-200">
-              <Save className="mr-2" /> Guardar Sesión
-            </button>
-            <button onClick={addToQueue} className="flex-1 py-4 bg-bida-navy text-white rounded-2xl font-bold text-base hover:bg-[#003366] active:scale-[0.99] transition-all flex items-center justify-center shadow-lg shadow-slate-300">
-              <ListPlus className="mr-2" /> Añadir a la Cola
-            </button>
-          </div>
+          {mode === 'Training' ? (
+            <div className="flex flex-col md:flex-row gap-4">
+              <button onClick={handleSingleSave} className="flex-1 py-4 bg-bida-green text-bida-navy rounded-2xl font-bold text-base hover:bg-[#25d366] hover:text-white active:scale-[0.99] transition-all flex items-center justify-center shadow-lg shadow-green-200">
+                <Save className="mr-2" /> Guardar Sesión
+              </button>
+              <button onClick={addToQueue} className="flex-1 py-4 bg-bida-navy text-white rounded-2xl font-bold text-base hover:bg-[#003366] active:scale-[0.99] transition-all flex items-center justify-center shadow-lg shadow-slate-300">
+                <ListPlus className="mr-2" /> Añadir a la Cola
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col md:flex-row gap-4">
+              <button
+                type="button"
+                onClick={() => setIsPlannerOpen(true)}
+                className="flex-1 py-4 bg-bida-navy text-white rounded-2xl font-bold text-base hover:bg-[#003366] active:scale-[0.99] transition-all flex items-center justify-center shadow-lg shadow-slate-300"
+              >
+                <Disc className="mr-2 w-5 h-5 text-bida-orange" /> Abrir Carrusel de Muestras
+              </button>
+              {queue.length > 0 && (
+                <button
+                  type="button"
+                  onClick={commitQueue}
+                  className="flex-1 py-4 bg-bida-green text-bida-navy rounded-2xl font-bold text-base hover:bg-[#25d366] hover:text-white active:scale-[0.99] transition-all flex items-center justify-center shadow-lg shadow-green-200"
+                >
+                  <Send className="mr-2 w-5 h-5" /> Enviar {queue.length} Muestra(s) a Sheets
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -471,9 +607,10 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
                     <span className="text-bida-green font-bold">C: {item.uaC}</span>
                   </div>
                 ) : (
-                  <div className="flex gap-2 text-xs font-numeric mt-2">
-                    <span className="bg-white px-2 py-1 rounded border">ID: {item.sampleId}</span>
-                    <span className="text-bida-navy font-bold">{item.result}</span>
+                  <div className="flex flex-wrap gap-2 text-xs font-numeric mt-2">
+                    <span className="bg-white px-2 py-1 rounded border">ID: {item.sampleId || '—'}</span>
+                    {item.position && <span className="bg-white px-2 py-1 rounded border">{item.position}</span>}
+                    <span className={`font-bold ${!isOperationalSessionSuccess(item) ? 'text-bida-pink' : 'text-green-600'}`}>{item.result}</span>
                   </div>
                 )}
               </div>
@@ -504,6 +641,18 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
           </button>
         </div>
       )}
+
+      {/* MODAL PLANIFICADOR DE BLOQUE (10 UA / 20 UA / RUEDA) */}
+      <BlockPlannerModal
+        isOpen={isPlannerOpen}
+        onClose={() => setIsPlannerOpen(false)}
+        onApply={handleBlockOutcome}
+        mode={mode}
+        initialIncludeBlanks={selectedModule === 'Módulo Vacíos'}
+        initialTotalRounds={mode === 'Training' && recordType === '20UA' ? 20 : 10}
+        dogName={dogs.find(d => d.id === selectedDog)?.name}
+        moduleName={selectedModule}
+      />
 
     </div>
   );
