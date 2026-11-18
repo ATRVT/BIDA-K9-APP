@@ -430,23 +430,18 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
               </div>
 
               {/* Callout para abrir el Carrusel en Entrenamiento */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-gradient-to-r from-orange-50/90 to-amber-50/60 border border-orange-200/80 rounded-2xl mb-6 shadow-sm gap-4 animate-in fade-in duration-200">
-                <div className="flex items-center space-x-3.5">
-                  <div className="w-11 h-11 rounded-2xl bg-bida-orange/15 flex items-center justify-center text-bida-orange flex-shrink-0">
-                    <Disc className="w-6 h-6 text-bida-orange" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gradient-to-r from-orange-50/90 to-amber-50/60 border border-orange-200/80 rounded-2xl mb-6 shadow-sm gap-3 animate-in fade-in duration-200">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-bida-orange/15 flex items-center justify-center text-bida-orange flex-shrink-0">
+                    <Disc className="w-5 h-5 text-bida-orange" />
                   </div>
-                  <div>
-                    <div className="text-sm font-black text-bida-navy flex flex-wrap items-center gap-2">
-                      <span>Asistente de Bloque en Rueda ({recordType === '20UA' ? '20 UA' : '10 UA'})</span>
-                      <span className="text-[10px] font-bold text-bida-orange bg-white px-2 py-0.5 rounded border border-orange-200">
-                        {selectedModule === 'Módulo Vacíos'
-                          ? (recordType === '20UA' ? '4 Rondas en Vacío' : '2 Rondas en Vacío')
-                          : (recordType === '20UA' ? '20 Rondas Equilibradas' : '10 Rondas Equilibradas')}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 font-medium mt-0.5">
-                      Genera los {recordType === '20UA' ? '20' : '10'} ensayos aleatorios en rueda (8 o 12) y registra VP/VN/FP/FN en cada ronda.
-                    </p>
+                  <div className="text-sm font-black text-bida-navy flex flex-wrap items-center gap-2">
+                    <span>Asistente de Bloque en Rueda ({recordType === '20UA' ? '20 UA' : '10 UA'})</span>
+                    <span className="text-[10px] font-bold text-bida-orange bg-white px-2 py-0.5 rounded border border-orange-200">
+                      {selectedModule === 'Módulo Vacíos'
+                        ? (recordType === '20UA' ? '4 Rondas en Vacío' : '2 Rondas en Vacío')
+                        : (recordType === '20UA' ? '20 Rondas Equilibradas' : '10 Rondas Equilibradas')}
+                    </span>
                   </div>
                 </div>
                 <button
@@ -479,17 +474,12 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
             </>
           ) : (
             <>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-gradient-to-r from-orange-50/90 to-amber-50/60 border border-orange-200/80 rounded-2xl mb-6 shadow-sm gap-4">
-                <div className="flex items-center space-x-3.5">
-                  <div className="w-11 h-11 rounded-2xl bg-bida-orange/15 flex items-center justify-center text-bida-orange flex-shrink-0">
-                    <Disc className="w-6 h-6 text-bida-orange" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gradient-to-r from-orange-50/90 to-amber-50/60 border border-orange-200/80 rounded-2xl mb-6 shadow-sm gap-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-bida-orange/15 flex items-center justify-center text-bida-orange flex-shrink-0">
+                    <Disc className="w-5 h-5 text-bida-orange" />
                   </div>
-                  <div>
-                    <div className="text-sm font-black text-bida-navy">Registro de Muestras en Carrusel (10 o 20 rondas)</div>
-                    <p className="text-xs text-slate-600 font-medium mt-0.5">
-                      Tanto la posición (rueda 8 o 12) como el ID de muestra del hospital y el resultado (VP/VN/FP/FN) se asignan directamente en el carrusel.
-                    </p>
-                  </div>
+                  <div className="text-sm font-black text-bida-navy">Registro de Muestras en Carrusel</div>
                 </div>
                 <button
                   type="button"

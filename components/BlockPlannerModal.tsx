@@ -237,9 +237,6 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
                   Rueda {wheelSize} Pos
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium hidden sm:block">
-                Vista fija de rueda para entrenar y registrar · Desliza abajo si quieres revisar el listado
-              </p>
             </div>
           </div>
           <button
@@ -461,9 +458,6 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
 
                 {/* Botones de respuesta directa sin mover el scroll */}
                 <div className="mt-3 pt-3 border-t border-slate-100">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
-                    Marcar resultado Ronda {activeRound.roundNumber} (pasa a la siguiente)
-                  </span>
                   <div className="grid grid-cols-4 gap-2">
                     {RESULT_OPTIONS.map(opt => (
                       <button
@@ -517,17 +511,6 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                     Secuencia del Bloque (1 al {totalRounds})
                   </h3>
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    {includeBlanks ? (
-                      <>
-                        <span className="text-green-600 font-bold">VP (con olor) / VN (vacío) = correcto</span> · <span className="text-bida-pink font-bold">resto = fallo</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-green-600 font-bold">VP = correcto</span> · <span className="text-bida-pink font-bold">VN/FP/FN = fallo (sin vacíos)</span>
-                      </>
-                    )}
-                  </span>
                 </div>
 
                 <div className="space-y-2 md:max-h-[430px] md:overflow-y-auto pr-1">
@@ -629,17 +612,8 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
         </div>
 
         {/* FOOTER */}
-        <div className="p-4 md:px-8 bg-slate-50 border-t border-slate-100 flex flex-col lg:flex-row items-center justify-between gap-3">
-          <div className="flex items-center text-xs text-slate-500 min-w-0">
-            <Info size={14} className="mr-1.5 text-bida-orange flex-shrink-0" />
-            <span>
-              {includeBlanks
-                ? `Modo Vacíos (${totalRounds} UA): ${odorCount} ensayos con muestra en rueda de ${wheelSize} y ${blankCount} rondas en vacío no consecutivas.`
-                : `Modo Equilibrado (${totalRounds} UA): ${totalRounds / 2} contenedores bajos (1-${wheelSize / 2}) y ${totalRounds / 2} altos (${wheelSize / 2 + 1}-${wheelSize}) alternados.`}
-            </span>
-          </div>
-
-          <div className="flex items-center space-x-3 w-full lg:w-auto flex-shrink-0">
+        <div className="p-4 md:px-8 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+          <div className="flex items-center space-x-3 w-full sm:w-auto">
             <button
               type="button"
               onClick={onClose}
