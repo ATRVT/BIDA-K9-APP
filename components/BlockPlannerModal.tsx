@@ -495,11 +495,7 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
                     <span>Ant.</span>
                   </button>
                   <div className="text-[11px] font-numeric font-bold text-slate-600">
-                    <span className="text-green-600">✓ {stats.correct}</span>
-                    <span className="mx-1.5 text-slate-300">|</span>
-                    <span className="text-bida-pink">✗ {stats.errors}</span>
-                    <span className="mx-1.5 text-slate-300">|</span>
-                    <span>{stats.completed}/{totalRounds}</span>
+                    <span>Completadas: {stats.completed} / {totalRounds}</span>
                   </div>
                   <button
                     type="button"
@@ -606,9 +602,9 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
                 </div>
               </div>
 
-              {/* MARCADOR */}
+              {/* MARCADOR DE RESPUESTAS (VP / VN / FP / FN) */}
               <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                <div className="grid grid-cols-4 gap-2 mb-3">
+                <div className="grid grid-cols-4 gap-2 mb-2.5">
                   {(['VP', 'VN', 'FP', 'FN'] as RoundResult[]).map(r => {
                     const isErrorBox = isErrorResult(r) || (r === 'VN' && !includeBlanks);
                     return (
@@ -623,31 +619,9 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
                     );
                   })}
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                        Correctos ({includeBlanks ? 'VP+VN' : 'VP'})
-                      </span>
-                      <span className="font-numeric font-bold text-lg text-green-600">{stats.correct}</span>
-                    </div>
-                    <div className="h-8 w-px bg-slate-200"></div>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                        Errores ({includeBlanks ? 'FP+FN' : 'VN+FP+FN'})
-                      </span>
-                      <span className="font-numeric font-bold text-lg text-bida-pink">{stats.errors}</span>
-                    </div>
-                    <div className="h-8 w-px bg-slate-200"></div>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Efectividad</span>
-                      <span className="font-numeric font-bold text-lg text-bida-navy">{stats.accuracy}%</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Completadas</span>
-                    <span className="font-numeric font-bold text-sm text-slate-700">{stats.completed} / {totalRounds}</span>
-                  </div>
+                <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                  <span className="font-bold uppercase tracking-wider text-[10px] text-slate-400">Rondas registradas</span>
+                  <span className="font-numeric font-bold text-sm text-bida-navy">{stats.completed} / {totalRounds}</span>
                 </div>
               </div>
             </div>
@@ -682,8 +656,8 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
                 <CheckCircle2 size={16} />
                 <span>
                   {isSamples
-                    ? `Añadir ${stats.completed} registro(s) a la cola`
-                    : `Volcar a la Sesión (✓ ${stats.correct} · ✗ ${stats.errors})`}
+                    ? `Añadir ${stats.completed} muestra(s) a la cola`
+                    : `Añadir Bloque a la Cola (${stats.completed}/${totalRounds})`}
                 </span>
               </button>
             )}
