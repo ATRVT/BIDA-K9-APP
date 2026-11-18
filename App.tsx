@@ -143,6 +143,26 @@ const App: React.FC = () => {
 
     try {
       console.log("📥 Descargando datos...");
+      // Si hay filas pendientes guardadas en el dispositivo, intentar sincronizarlas primero
+      try {
+        const pendingRaw = localStorage.getItem('bida.pendingRows');
+        if (pendingRaw) {
+          const pendingRows = JSON.parse(pendingRaw);
+          if (Array.isArray(pendingRows) && pendingRows.length > 0) {
+            const syncRes = await fetch(GOOGLE_SCRIPT_URL, {
+              method: 'POST',
+              redirect: 'follow',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({ action: 'save_raw_sessions', rows: pendingRows })
+            });
+            const syncText = await syncRes.text();
+            if (syncRes.ok && !syncText.includes('Acceso denegado') && !syncText.includes('ServiceLogin')) {
+              localStorage.removeItem('bida.pendingRows');
+            }
+          }
+        }
+      } catch {}
+
       const response = await fetch(`${GOOGLE_SCRIPT_URL}?t=${Date.now()}`);
       const data = await response.json();
 
@@ -335,16 +355,36 @@ const App: React.FC = () => {
       ];
     });
 
-    // Enviamos con la acción 'save_raw_sessions'
+    // Enviamos con la acción 'save_raw_sessions' (primero sin no-cors para verificar respuesta real de Apps Script)
     fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
-      mode: 'no-cors',
+      redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'save_raw_sessions', rows: rowsToSend })
-    }).then(() => {
-      alert("✅ Datos guardados correctamente.");
-      setTimeout(fetchData, 1500);
-    }).catch(() => alert("Error de conexión"));
+    })
+      .then(async (res) => {
+        const text = await res.text();
+        if (!res.ok || text.includes('Acceso denegado') || text.includes('ServiceLogin')) {
+          throw new Error('ACCESO_DENEGADO_APPS_SCRIPT');
+        }
+        alert("✅ Datos guardados correctamente en Google Sheets.");
+        setTimeout(fetchData, 1500);
+      })
+      .catch(() => {
+        // Respaldo local para no perder ningún registro mientras se reactiva el permiso en Apps Script
+        try {
+          const prevPending = JSON.parse(localStorage.getItem('bida.pendingRows') || '[]');
+          localStorage.setItem('bida.pendingRows', JSON.stringify([...prevPending, ...rowsToSend]));
+        } catch {}
+        alert(
+          "⚠️ Google Sheets rechazó la escritura (Acceso denegado en Apps Script).\n\n" +
+          "Tus registros se han guardado en la memoria del dispositivo para no perderlos.\n\n" +
+          "Para reactivar la conexión en la hoja 'APP K9 Cáncer':\n" +
+          "1. Abre Extensiones → Apps Script\n" +
+          "2. Pulsa Implementar → Gestionar implementaciones → Editar (lápiz)\n" +
+          "3. En 'Quién tiene acceso' selecciona 'Cualquier persona' y pulsa Implementar."
+        );
+      });
   };
 
   const handleAddDog = (newDog: Dog) => {

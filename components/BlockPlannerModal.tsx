@@ -6,7 +6,7 @@ import { SessionMode } from '../types';
 interface BlockPlannerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onApply?: (outcome: BlockOutcome) => void;
+  onApply?: (outcome: BlockOutcome, saveImmediately?: boolean) => void;
   mode?: SessionMode;
   initialIncludeBlanks?: boolean;
   initialTotalRounds?: BlockLength;
@@ -155,22 +155,23 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleApply = () => {
+  const handleApply = (saveImmediately: boolean = false) => {
     if (!onApply) return;
 
+    const marked = plan.filter(r => roundResults[r.roundNumber]);
+    if (marked.length === 0) {
+      alert('Marca el resultado (VP, VN, FP o FN) de al menos una ronda.');
+      return;
+    }
+
     if (isSamples) {
-      const marked = plan.filter(r => roundResults[r.roundNumber]);
-      if (marked.length === 0) {
-        alert('Marca el resultado (VP, VN, FP o FN) de al menos una ronda.');
-        return;
-      }
       const missingId = marked.filter(r => !r.isBlank && !(sampleIds[r.roundNumber] || '').trim());
       if (missingId.length > 0) {
         alert(`Falta el Nº de muestra en las rondas: ${missingId.map(r => r.roundNumber).join(', ')}.`);
         return;
       }
       const unmarked = plan.length - marked.length;
-      if (unmarked > 0 && !confirm(`Hay ${unmarked} ronda(s) sin resultado. Solo se añadirán las ${marked.length} rondas marcadas. ¿Continuar?"`)) {
+      if (unmarked > 0 && !confirm(`Hay ${unmarked} ronda(s) sin resultado. Solo se procesarán las ${marked.length} rondas marcadas. ¿Continuar?`)) {
         return;
       }
     }
@@ -179,20 +180,23 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
     const pad = (n: number) => String(n).padStart(2, '0');
     const blockId = `B${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 
-    onApply({
-      blockId,
-      wheelSize,
-      totalRounds,
-      includeBlanks,
-      rounds: plan.map(r => ({
-        ...r,
-        result: roundResults[r.roundNumber] || null,
-        sampleId: isSamples && !r.isBlank ? (sampleIds[r.roundNumber] || '').trim() : '',
-      })),
-      counts: { ...stats.counts },
-      correct: stats.correct,
-      errors: stats.errors,
-    });
+    onApply(
+      {
+        blockId,
+        wheelSize,
+        totalRounds,
+        includeBlanks,
+        rounds: plan.map(r => ({
+          ...r,
+          result: roundResults[r.roundNumber] || null,
+          sampleId: isSamples && !r.isBlank ? (sampleIds[r.roundNumber] || '').trim() : '',
+        })),
+        counts: { ...stats.counts },
+        correct: stats.correct,
+        errors: stats.errors,
+      },
+      saveImmediately
+    );
     onClose();
   };
 
@@ -570,27 +574,32 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
         </div>
 
         {/* FOOTER COMPACTO */}
-        <div className="px-3.5 py-2.5 md:px-6 md:py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+        <div className="px-3 py-2.5 md:px-6 md:py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs hover:bg-slate-50 transition-colors"
+            className="px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs hover:bg-slate-50 transition-colors"
           >
             Cerrar
           </button>
           {onApply && (
-            <button
-              type="button"
-              onClick={handleApply}
-              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-bida-green text-bida-navy font-bold text-xs hover:bg-[#25d366] transition-all shadow-md shadow-green-100 flex items-center justify-center space-x-1.5"
-            >
-              <CheckCircle2 size={15} />
-              <span>
-                {isSamples
-                  ? `Añadir ${stats.completed} muestra(s) a la cola`
-                  : `Añadir Bloque a la Cola (${stats.completed}/${totalRounds})`}
-              </span>
-            </button>
+            <div className="flex items-center gap-2 flex-1 justify-end">
+              <button
+                type="button"
+                onClick={() => handleApply(false)}
+                className="px-3 py-2.5 rounded-xl bg-bida-navy text-white font-bold text-xs hover:bg-[#003366] transition-all flex items-center justify-center space-x-1"
+              >
+                <span>+ Cola ({stats.completed}/{totalRounds})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleApply(true)}
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-bida-green text-bida-navy font-black text-xs hover:bg-[#25d366] transition-all shadow-md shadow-green-100 flex items-center justify-center space-x-1.5"
+              >
+                <CheckCircle2 size={15} />
+                <span>Guardar en Sheets ({stats.completed}/{totalRounds})</span>
+              </button>
+            </div>
           )}
         </div>
 

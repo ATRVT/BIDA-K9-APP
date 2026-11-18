@@ -177,7 +177,7 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
     setNotes("");
   };
 
-  const handleBlockOutcome = (outcome: BlockOutcome) => {
+  const handleBlockOutcome = (outcome: BlockOutcome, saveImmediately: boolean = false) => {
     const { VP, VN, FP, FN } = outcome.counts;
     const blanksLabel = outcome.includeBlanks ? 'con vacíos' : 'sin vacíos';
 
@@ -222,7 +222,14 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
         misses: plannedUaI,
         falsePositives: FP,
       };
-      setQueue(prev => [...prev, newItem]);
+
+      if (saveImmediately) {
+        onSaveSessions([{ id: `s-${Date.now()}`, ...newItem }]);
+        setSingleSaveSuccess(true);
+        setTimeout(() => setSingleSaveSuccess(false), 3000);
+      } else {
+        setQueue(prev => [...prev, newItem]);
+      }
       setNotes("");
       return;
     }
@@ -261,7 +268,19 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
           falsePositives: fps,
         };
       });
-    setQueue(prev => [...prev, ...items]);
+
+    if (saveImmediately) {
+      const finalSessions: SessionData[] = items.map((q, idx) => ({
+        id: `s-${baseTime}-${idx}`,
+        ...q,
+      }));
+      onSaveSessions(finalSessions);
+      setSingleSaveSuccess(true);
+      setTimeout(() => setSingleSaveSuccess(false), 3000);
+    } else {
+      setQueue(prev => [...prev, ...items]);
+    }
+    setNotes("");
   };
 
   const addToQueue = () => {
