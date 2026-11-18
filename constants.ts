@@ -29,8 +29,7 @@ export const MODULE_OBJECTIVES_MAP: Record<string, string[]> = {
 export const RECORD_TYPES = [
   "OCP",
   "10UA",
-  "20UA",
-  "Libre"
+  "20UA"
 ];
 
 export const REINFORCERS = [

@@ -24,10 +24,11 @@ export interface Trainer {
 }
 
 export type SessionMode = 'Training' | 'Operational'; // Entrenamiento vs Muestras
-export type RecordType = 'OCP' | '10UA' | '20UA' | 'Libre';
+export type RecordType = 'OCP' | '10UA' | '20UA';
 export type ReinforcerType = 'Comestible' | 'Juguete' | 'Social';
 export type ReinforcementSchedule = 'Fijo' | 'Variable';
 export type SampleResult = 'VP' | 'FP' | 'VN' | 'FN' | null; // Verdadero Positivo, Falso Positivo, etc.
+
 
 export interface SessionData {
   id: string;

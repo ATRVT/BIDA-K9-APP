@@ -279,7 +279,7 @@ const App: React.FC = () => {
             mode,
             module: s.module || s.modulo || '',
             targetOdor: s.targetodor || s.objetivo || '',
-            recordType: s.recordtype || s['tipo registro'] || 'Libre',
+            recordType: s.recordtype || s['tipo registro'] || '10UA',
             uaC, uaI, hits, misses, falsePositives: fps,
             reinforcer: s.reinforcer || 'Comestible',
             schedule: s.schedule || 'Fijo',
@@ -335,7 +335,7 @@ const App: React.FC = () => {
         trainerName,                            // D: trainerName
         modeLabel,                              // E: mode
 
-        isTraining ? (session.recordType || "Libre") : "", // F: recordType
+        isTraining ? (session.recordType || "10UA") : "", // F: recordType
         isTraining ? (session.module || "") : "",         // G: module
         isTraining ? (session.targetOdor || "") : "",     // H: targetOdor
         session.uaC ?? 0,                                 // I: uaC

@@ -37,7 +37,7 @@ export const RapidEntry: React.FC<RapidEntryProps> = ({ dogs, trainers, currentU
   const [schedule, setSchedule] = useState<ReinforcementSchedule>('Fijo');
   const [notes, setNotes] = useState("");
 
-  const [recordType, setRecordType] = useState<RecordType>('Libre');
+  const [recordType, setRecordType] = useState<RecordType>('10UA');
   const [selectedModule, setSelectedModule] = useState<string>(MODULES[0]);
   const [selectedOdor, setSelectedOdor] = useState<string>(MODULE_OBJECTIVES_MAP[MODULES[0]][0]);
   const [uaC, setUaC] = useState<number | ''>(0);
