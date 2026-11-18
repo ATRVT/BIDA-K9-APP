@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Copy, Check, Target, Disc, ArrowRight, ArrowLeft, CheckCircle2, Shuffle } from 'lucide-react';
+import { X, Copy, Check, Target, Disc, ArrowRight, ArrowLeft, CheckCircle2, Shuffle, ChevronDown, ChevronUp } from 'lucide-react';
 import { BlockLength, BlockOutcome, PlannedRound, RoundResult, WheelSize, generateBlockPlan, isRoundResultCorrect, isErrorResult } from '../planner';
 import { SessionMode } from '../types';
 
@@ -52,6 +52,7 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
   const [roundResults, setRoundResults] = useState<Record<number, RoundResult | null>>({});
   const [sampleIds, setSampleIds] = useState<Record<number, string>>({});
   const [copied, setCopied] = useState<boolean>(false);
+  const [showRoundsDetail, setShowRoundsDetail] = useState<boolean>(false);
 
   // Al abrir: sincronizar con el tipo de registro (10UA o 20UA) y el módulo actual
   useEffect(() => {
@@ -63,6 +64,7 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
       setRoundResults({});
       setSampleIds({});
       setCopied(false);
+      setShowRoundsDetail(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, initialIncludeBlanks, initialTotalRounds]);
@@ -223,7 +225,7 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-4xl max-h-[96vh] rounded-3xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white w-full max-w-md max-h-[96vh] rounded-3xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
 
         {/* HEADER ULTRA COMPACTO */}
         <div className="px-3.5 py-2.5 md:px-6 md:py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
@@ -326,11 +328,10 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
         </div>
 
         {/* MODAL BODY */}
-        <div className="flex-1 overflow-y-auto p-2.5 md:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 items-start">
+        <div className="flex-1 overflow-y-auto p-2.5 md:p-4 space-y-3">
 
-            {/* PANEL PRINCIPAL: RUEDA + POSICIÓN + BOTONES VP/VN/FP/FN (SIN SCROLL EN MÓVIL) */}
-            <div className="md:col-span-5 flex flex-col items-center bg-slate-50/70 p-3 md:p-5 rounded-2xl md:rounded-3xl border border-slate-100 md:sticky md:top-0">
+          {/* PANEL PRINCIPAL: RUEDA + POSICIÓN + BOTONES VP/VN/FP/FN */}
+          <div className="flex flex-col items-center bg-slate-50/70 p-3 md:p-4 rounded-2xl border border-slate-100">
               
               {/* Tira superior integrada: Navegación + Ronda + Posición objetivo */}
               <div className="w-full flex items-center justify-between bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs mb-2">
@@ -493,16 +494,25 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
               </div>
             </div>
 
-            {/* COLUMNA DERECHA / INFERIOR: LISTADO COMPLETO DE RONDAS */}
-            <div className="md:col-span-7 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Detalle de Rondas (1 al {totalRounds})
-                  </h3>
-                </div>
+            {/* DESPLEGABLE OPCIONAL: DETALLE DE RONDAS */}
+            <div className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white">
+              <button
+                type="button"
+                onClick={() => setShowRoundsDetail(prev => !prev)}
+                className="w-full px-3.5 py-2.5 flex items-center justify-between bg-slate-50/80 hover:bg-slate-100/80 transition-colors text-left"
+              >
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  {showRoundsDetail ? `Ocultar detalle de rondas (1 al ${totalRounds})` : `Ver detalle de rondas (1 al ${totalRounds})`}
+                </span>
+                {showRoundsDetail ? (
+                  <ChevronUp size={16} className="text-slate-500" />
+                ) : (
+                  <ChevronDown size={16} className="text-slate-500" />
+                )}
+              </button>
 
-                <div className="space-y-1.5 md:max-h-[430px] md:overflow-y-auto pr-1">
+              {showRoundsDetail && (
+                <div className="p-2.5 space-y-1.5 border-t border-slate-100 max-h-[260px] overflow-y-auto">
                   {plan.map((round, idx) => {
                     const isSelected = activeRoundIndex === idx;
                     const res = roundResults[round.roundNumber];
@@ -568,9 +578,8 @@ export const BlockPlannerModal: React.FC<BlockPlannerModalProps> = ({
                     );
                   })}
                 </div>
-              </div>
+              )}
             </div>
-          </div>
         </div>
 
         {/* FOOTER COMPACTO */}
